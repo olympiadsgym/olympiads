@@ -15,7 +15,7 @@ env/
 db.sqlite3
 /tmp/db.sqlite3
 *.log
-staticfiles/
+
 
 # OS
 .DS_Store
