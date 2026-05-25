@@ -1,9 +1,9 @@
-from django.contrib.staticfiles.views import serve as serve_static
-from django.urls import path, include, re_path
+from django.urls import path, include
+from django.views.generic import RedirectView
 
 urlpatterns = [
+    path('', RedirectView.as_view(url='/gym-mgmt-2026/', permanent=False)),
     path('gym-mgmt-2026/', include('core.urls')),
     path('gym-mgmt-2026/', include('members.urls')),
     path('portal/', include(('members.urls', 'members'), namespace='members')),
-    re_path(r'^static/(?P<path>.*)$', serve_static, {'insecure': True}),
 ]
