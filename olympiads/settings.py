@@ -1,9 +1,9 @@
 from pathlib import Path
 from decouple import config
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Allow local development without requiring env vars (Vercel provides env vars in production).
 SECRET_KEY = config('SECRET_KEY', default='dev-secret-key-change-me')
 
 
@@ -14,8 +14,6 @@ def parse_debug(value):
 DEBUG = config('DEBUG', default=False, cast=parse_debug)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
-
-# Auto-add Vercel domains
 ALLOWED_HOSTS += ['.vercel.app', 'localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
@@ -31,7 +29,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # <-- WhiteNoise for static files
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -62,10 +60,10 @@ TEMPLATES = [
 WSGI_APPLICATION = 'olympiads.wsgi.application'
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': '/tmp/db.sqlite3',  # Vercel writable path
-    }
+    'default': dj_database_url.config(
+        default=config('DATABASE_URL', default='sqlite:////tmp/db.sqlite3'),
+        conn_max_age=600,
+    )
 }
 
 PASSWORD_HASHERS = [
@@ -90,10 +88,6 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
-
-
-
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Email — Gmail SMTP
@@ -115,9 +109,3 @@ CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 X_FRAME_OPTIONS = 'DENY'
 SECURE_CONTENT_TYPE_NOSNIFF = True
-
-
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
