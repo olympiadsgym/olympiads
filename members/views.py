@@ -14,13 +14,15 @@ from core.models import MembershipPlan, Announcement
 from core.decorators import admin_required, member_required
 from .models import Member, AttendanceLog, User
 
+PORTAL_LOGIN_URL = "https://olympiads-beta.vercel.app/portal/login/"
+
 
 def _generate_temp_password(length=12):
     alphabet = string.ascii_letters + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
-# ─── Admin: Member Management ─────────────────────────────────────
+# --- Admin: Member Management ------------------------------------
 
 @admin_required
 def member_list_view(request):
@@ -58,7 +60,6 @@ def register_member(request):
         plan_id = request.POST.get('plan_id')
         start_date_str = request.POST.get('start_date')
 
-        # Validate required fields
         if not all([name, email, contact, plan_id, start_date_str]):
             error = 'All fields are required.'
         elif Member.objects.filter(email=email).exists():
@@ -93,11 +94,13 @@ def register_member(request):
                     plain_text = (
                         f"Hi {name},\n\n"
                         f"Welcome to OLYMPIADS Gym! Your membership is now active.\n\n"
+                        f"Portal Login: {PORTAL_LOGIN_URL}\n"
                         f"Email: {email}\n"
                         f"Password: {temp_pw}\n\n"
                         f"Plan: {plan.plan_name}\n"
                         f"Start Date: {start_date}\n"
                         f"Expiry Date: {expiry_date}\n\n"
+                        f"Please change your password after your first login.\n\n"
                         f"— OLYMPIADS Gym"
                     )
 
@@ -150,8 +153,27 @@ def register_member(request):
                       </tr>
                       <tr>
                         <td style="border-top:1px solid rgba(255,255,255,0.05);padding:16px 24px;">
-                          <p style="margin:0 0 4px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;">Password</p>
+                          <p style="margin:0 0 4px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;">Temporary Password</p>
                           <p style="margin:0;font-size:16px;font-weight:700;color:#f5a623;letter-spacing:2px;font-family:monospace;">{temp_pw}</p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Login button -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
+                      <tr>
+                        <td align="center">
+                          <a href="{PORTAL_LOGIN_URL}"
+                             style="display:inline-block;padding:14px 40px;background:linear-gradient(90deg,#f5a623,#f7c36a);color:#0f1117;font-size:15px;font-weight:700;text-decoration:none;border-radius:8px;letter-spacing:0.5px;">
+                            Login to Your Portal
+                          </a>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td align="center" style="padding-top:10px;">
+                          <p style="margin:0;font-size:12px;color:#6b7280;">
+                            Or copy this link: <a href="{PORTAL_LOGIN_URL}" style="color:#f5a623;text-decoration:none;">{PORTAL_LOGIN_URL}</a>
+                          </p>
                         </td>
                       </tr>
                     </table>
@@ -184,6 +206,10 @@ def register_member(request):
                         </td>
                       </tr>
                     </table>
+
+                    <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.6;">
+                      Please change your password after your first login.
+                    </p>
 
                   </td>
                 </tr>
@@ -268,7 +294,6 @@ def edit_member(request, pk):
                 member.expiry_date = expiry_date
                 member.status = member.compute_status()
 
-                # Update email on both member and linked user
                 if member.email != email:
                     if member.user:
                         member.user.email = email
@@ -301,7 +326,7 @@ def deactivate_member(request, pk):
     return redirect('members:member_list')
 
 
-# ─── Member Portal ────────────────────────────────────────────────
+# --- Member Portal ------------------------------------------------
 
 def portal_login(request):
     if request.session.get('member_user_id'):
@@ -341,11 +366,9 @@ def portal_dashboard(request):
     user = get_object_or_404(User, pk=request.session['member_user_id'])
     member = get_object_or_404(Member, user=user, is_active=True)
 
-    # Recompute status on view
     member.status = member.compute_status()
     member.save(update_fields=['status'])
 
-    # Visit history — paginated
     all_logs = member.attendance_logs.order_by('-check_in_date', '-check_in_time')
     paginator = Paginator(all_logs, 20)
     page = paginator.get_page(request.GET.get('page'))
