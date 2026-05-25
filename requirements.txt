@@ -1,0 +1,5 @@
+Django==5.1.4
+python-decouple==3.8
+bcrypt==4.2.1
+django[argon2]
+whitenoise==6.8.2

@@ -1,0 +1,95 @@
+{% extends "core/base.html" %}
+{% block title %}Members - OLYMPIADS{% endblock %}
+{% block nav_members %}bottom-nav__tab--active{% endblock %}
+{% block menu_members %}menu-item--active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">Members</h2>
+</div>
+
+<form method="get" class="filter-row" id="filterForm">
+  <input type="search" name="q" value="{{ query }}" class="search-input" placeholder="Search by name..." aria-label="Search members">
+  <input type="hidden" name="status" id="statusHidden" value="{{ status_filter }}">
+  <div class="custom-dropdown" id="statusDropdown">
+    <button type="button" class="custom-dropdown__btn" id="statusDropdownBtn">
+      <span id="statusDropdownLabel">{% if status_filter %}{{ status_filter }}{% else %}All Statuses{% endif %}</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <ul class="custom-dropdown__list" id="statusDropdownList">
+      <li class="custom-dropdown__item {% if not status_filter %}custom-dropdown__item--active{% endif %}" data-value="">All Statuses</li>
+      {% for value, label in status_choices %}
+        <li class="custom-dropdown__item {% if status_filter == value %}custom-dropdown__item--active{% endif %}" data-value="{{ value }}">{{ label }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</form>
+
+{% if page_obj.object_list %}
+<div class="members-table-wrapper">
+  <div class="card table-card">
+    <table class="table">
+      <thead>
+        <tr><th>Name</th><th>Status</th><th>Plan</th><th>Expires</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for member in page_obj %}
+        <tr>
+          <td class="member-name-cell"><span class="status-dot status-dot--{{ member.status|lower|cut:' ' }}" aria-hidden="true"></span>{{ member.name }}</td>
+          <td><span class="badge badge--{{ member.status|lower|cut:' ' }}" aria-label="Status: {{ member.status }}">{{ member.status }}</span></td>
+          <td>{{ member.plan.plan_name }}</td>
+          <td>{{ member.expiry_date }}</td>
+          <td class="table-actions">
+            <a href="{% url 'members:edit_member' member.pk %}" class="btn btn--ghost btn--sm">Edit</a>
+            <form method="post" action="{% url 'members:deactivate_member' member.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn--danger btn--sm" onclick="return confirm('Deactivate {{ member.name }}?')">Deactivate</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% for member in page_obj %}
+<div class="member-mobile-card">
+  <div class="member-mobile-card__top">
+    <div>
+      <div class="member-mobile-card__name"><span class="status-dot status-dot--{{ member.status|lower|cut:' ' }}" aria-hidden="true"></span>{{ member.name }}</div>
+      <div class="member-mobile-card__plan">{{ member.plan.plan_name }}</div>
+    </div>
+    <span class="badge badge--{{ member.status|lower|cut:' ' }}">{{ member.status }}</span>
+  </div>
+  <div class="member-mobile-card__bottom">
+    <span class="member-mobile-card__expiry">Expires: {{ member.expiry_date }}</span>
+    <div class="member-mobile-card__actions">
+      <a href="{% url 'members:edit_member' member.pk %}" class="btn btn--ghost btn--sm">Edit</a>
+      <form method="post" action="{% url 'members:deactivate_member' member.pk %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn--danger btn--sm" onclick="return confirm('Deactivate {{ member.name }}?')">Deactivate</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&q={{ query }}&status={{ status_filter }}" class="btn btn--ghost btn--sm">Prev</a>
+  {% endif %}
+  <span class="pagination__info">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&q={{ query }}&status={{ status_filter }}" class="btn btn--ghost btn--sm">Next</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card empty-state">
+  <p>No members found{% if query %} for "{{ query }}"{% endif %}.</p>
+</div>
+{% endif %}
+{% endblock %}

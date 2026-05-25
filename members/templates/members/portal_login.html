@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>OLYMPIADS - Member Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  <script>(function(){var t=localStorage.getItem('olympiads_theme')||'';document.documentElement.setAttribute('data-theme',t);})();</script>
+</head>
+<body class="login-body">
+  <main class="login-container" aria-labelledby="portal-title">
+    <section class="login-card">
+      <div class="login-logo">
+        <span class="login-logo__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 7v10" />
+            <path d="M18 7v10" />
+            <path d="M3 9v6" />
+            <path d="M21 9v6" />
+            <path d="M6 12h12" />
+          </svg>
+        </span>
+        <h1 class="login-logo__name" id="portal-title">OLYMPIADS</h1>
+        <p class="login-logo__sub">Member Portal</p>
+      </div>
+
+      {% if error %}
+        <div class="flash flash--error alert alert--danger" role="alert">{{ error }}</div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-group">
+          <label for="email" class="form-label">Email Address</label>
+          <input type="email" id="email" name="email" class="form-input" placeholder="you@example.com" autocomplete="email" required>
+        </div>
+        <div class="form-group">
+          <label for="password" class="form-label">Password</label>
+          <input type="password" id="password" name="password" class="form-input" placeholder="Password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn btn--primary btn--full">Sign In</button>
+      </form>
+    </section>
+  </main>
+  <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.utils import timezone
+from django.db.models import Q
+import datetime
+
+from .models import Announcement, NotificationLog
+from .decorators import admin_required
+from members.models import Member, AttendanceLog, User
+
+
+# ─── Authentication ───────────────────────────────────────────────
+
+def login_view(request):
+    if request.session.get('admin_id'):
+        return redirect('core:dashboard')
+
+    error = None
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip().lower()
+        password = request.POST.get('password', '')
+
+        try:
+            user = User.objects.get(email=email, role='admin')
+        except User.DoesNotExist:
+            error = 'Invalid email or password.'
+        else:
+            if user.is_locked():
+                error = 'Account locked for 15 minutes due to too many failed attempts.'
+            elif user.check_password(password):
+                user.reset_failed()
+                request.session['admin_id'] = user.pk
+                request.session['admin_email'] = user.email
+                request.session['session_start_date'] = str(timezone.localdate())
+                return redirect('core:dashboard')
+            else:
+                user.increment_failed()
+                error = 'Invalid email or password.'
+
+    return render(request, 'core/login.html', {'error': error})
+
+
+def logout_view(request):
+    request.session.flush()
+    return redirect('core:login')
+
+
+# ─── Dashboard ────────────────────────────────────────────────────
+
+@admin_required
+def dashboard_view(request):
+    today = timezone.localdate()
+    active_members = Member.objects.filter(is_active=True)
+
+    counts = {
+        'active': active_members.filter(status='Active').count(),
+        'inactive': active_members.filter(status='Inactive').count(),
+        'expiring_soon': active_members.filter(status='Expiring Soon').count(),
+        'expired': active_members.filter(status='Expired').count(),
+        'total': active_members.count(),
+    }
+
+    expiring_soon = active_members.filter(status='Expiring Soon').order_by('expiry_date')[:10]
+    todays_checkins = AttendanceLog.objects.filter(check_in_date=today).select_related('member').order_by('-check_in_time')
+
+    return render(request, 'core/dashboard.html', {
+        'counts': counts,
+        'expiring_soon': expiring_soon,
+        'todays_checkins': todays_checkins,
+        'today': today,
+    })
+
+
+# ─── Check-In ─────────────────────────────────────────────────────
+
+@admin_required
+def checkin_view(request):
+    search_results = []
+    checkin_result = None
+    error = None
+    query = request.GET.get('q', '').strip()
+
+    if query:
+        search_results = Member.objects.filter(
+            is_active=True,
+            name__icontains=query
+        ).select_related('plan')[:20]
+
+    if request.method == 'POST':
+        member_id = request.POST.get('member_id')
+        member = get_object_or_404(Member, pk=member_id, is_active=True)
+
+        # Block expired members
+        if member.status == 'Expired':
+            error = f"Membership expired on {member.expiry_date}. Check-in not allowed."
+        else:
+            now = timezone.localtime()
+            today = now.date()
+            cutoff = now - datetime.timedelta(minutes=30)
+
+            # Duplicate check within 30 minutes
+            recent = AttendanceLog.objects.filter(
+                member=member,
+                check_in_date=today,
+                check_in_time__gte=cutoff.time(),
+            ).first()
+
+            if recent:
+                error = f"Already checked in at {recent.check_in_time.strftime('%I:%M %p')} — less than 30 minutes ago."
+            else:
+                log = AttendanceLog.objects.create(
+                    member=member,
+                    check_in_date=today,
+                    check_in_time=now.time(),
+                )
+                # Compute and store session end time (2 hours by default)
+                log.compute_session_end_time(duration_minutes=120)
+                log.save(update_fields=['session_end_time'])
+                # Recompute status after check-in
+                member.status = member.compute_status()
+                member.save(update_fields=['status'])
+                checkin_result = {
+                    'member': member,
+                    'log': log,
+                }
+
+    return render(request, 'core/checkin.html', {
+        'search_results': search_results,
+        'query': query,
+        'checkin_result': checkin_result,
+        'error': error,
+    })
+
+
+# ─── Member Timeout ───────────────────────────────────────────────
+
+@admin_required
+def timeout_member(request, log_id):
+    """End a member's session immediately."""
+    log = get_object_or_404(AttendanceLog, pk=log_id)
+    now = timezone.localtime()
+    log.session_end_time = now.time()
+    log.save(update_fields=['session_end_time'])
+    messages.success(request, f"Session ended for {log.member.name}.")
+    return redirect('core:dashboard')
+
+
+# ─── Announcements ────────────────────────────────────────────────
+
+@admin_required
+def announcement_list(request):
+    announcements = Announcement.objects.all()
+    return render(request, 'core/announcements.html', {'announcements': announcements})
+
+
+@admin_required
+def announcement_create(request):
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        body = request.POST.get('body', '').strip()
+        if title and body:
+            admin_user = User.objects.get(pk=request.session['admin_id'])
+            Announcement.objects.create(title=title, body=body, created_by=admin_user)
+            messages.success(request, 'Announcement posted.')
+        else:
+            messages.error(request, 'Title and body are required.')
+    return redirect('core:announcements')
+
+
+@admin_required
+def announcement_delete(request, pk):
+    if request.method == 'POST':
+        announcement = get_object_or_404(Announcement, pk=pk)
+        announcement.delete()
+        messages.success(request, 'Announcement deleted.')
+    return redirect('core:announcements')

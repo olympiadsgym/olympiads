@@ -1,0 +1,43 @@
+{% extends "core/base.html" %}
+{% block title %}Announcements - OLYMPIADS{% endblock %}
+{% block nav_announce %}bottom-nav__tab--active{% endblock %}
+{% block menu_announce %}menu-item--active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">Announcements</h2>
+</div>
+
+<div class="card compose-card">
+  <form method="post" action="{% url 'core:announcement_create' %}" novalidate>
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="title" class="form-label">Title</label>
+      <input type="text" id="title" name="title" class="form-input" placeholder="Announcement title" required maxlength="200">
+    </div>
+    <div class="form-group">
+      <label for="body" class="form-label">Message</label>
+      <textarea id="body" name="body" class="form-input form-textarea" rows="4" placeholder="Write your announcement..." required></textarea>
+    </div>
+    <button type="submit" class="btn btn--primary">Post Announcement</button>
+  </form>
+</div>
+
+{% if announcements %}
+  {% for a in announcements %}
+  <div class="announcement-card">
+    <div class="announcement-card__header">
+      <span class="announcement-card__title">{{ a.title }}</span>
+      <span class="announcement-card__date">{{ a.created_at|date:"M d, Y g:i A" }}</span>
+    </div>
+    <p class="announcement-card__body">{{ a.body }}</p>
+    <form method="post" action="{% url 'core:announcement_delete' a.pk %}" class="announcement-card__footer">
+      {% csrf_token %}
+      <button type="submit" class="btn btn--danger btn--sm" onclick="return confirm('Delete this announcement?')">Delete</button>
+    </form>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="card empty-state"><p>No announcements yet. Post one above.</p></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "core/base.html" %}
+{% block title %}Dashboard - OLYMPIADS{% endblock %}
+{% block nav_home %}bottom-nav__tab--active{% endblock %}
+{% block menu_home %}menu-item--active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">Dashboard</h2>
+  <span class="page-date">{{ today }}</span>
+</div>
+
+<div class="stat-grid">
+  <a href="{% url 'members:member_list' %}?status=Active" class="stat-card stat-card--active">
+    <span class="stat-card__count">{{ counts.active }}</span>
+    <span class="stat-card__label">Active</span>
+  </a>
+  <a href="{% url 'members:member_list' %}?status=Inactive" class="stat-card stat-card--inactive">
+    <span class="stat-card__count">{{ counts.inactive }}</span>
+    <span class="stat-card__label">Inactive</span>
+  </a>
+  <a href="{% url 'members:member_list' %}?status=Expiring+Soon" class="stat-card stat-card--expiring">
+    <span class="stat-card__count">{{ counts.expiring_soon }}</span>
+    <span class="stat-card__label">Expiring Soon</span>
+  </a>
+  <a href="{% url 'members:member_list' %}?status=Expired" class="stat-card stat-card--expired">
+    <span class="stat-card__count">{{ counts.expired }}</span>
+    <span class="stat-card__label">Expired</span>
+  </a>
+  <a href="{% url 'members:member_list' %}" class="stat-card stat-card--total">
+    <span class="stat-card__count">{{ counts.total }}</span>
+    <span class="stat-card__label">Total Members</span>
+  </a>
+</div>
+
+{% if expiring_soon %}
+<section class="section">
+  <h3 class="section-title">Expiring Soon</h3>
+  <div class="table-wrap">
+    <div class="card table-card">
+      <table class="table">
+        <thead><tr><th>Member</th><th>Plan</th><th>Expires</th><th>Days Left</th></tr></thead>
+        <tbody>
+          {% for m in expiring_soon %}
+          <tr>
+            <td><a href="{% url 'members:edit_member' m.pk %}">{{ m.name }}</a></td>
+            <td>{{ m.plan.plan_name }}</td>
+            <td>{{ m.expiry_date }}</td>
+            <td><span class="badge badge--expiringsoon">{{ m.days_remaining }} days</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="section">
+  <h3 class="section-title">Today's Check-ins ({{ todays_checkins.count }})</h3>
+  {% if todays_checkins %}
+  <div class="table-wrap">
+    <div class="card table-card">
+      <table class="table">
+        <thead><tr><th>Member</th><th>Plan</th><th>Time</th></tr></thead>
+        <tbody>
+          {% for log in todays_checkins %}
+          <tr>
+            <td>{{ log.member.name }}</td>
+            <td>{{ log.member.plan.plan_name }}</td>
+            <td>{{ log.check_in_time|time:"g:i A" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card empty-state"><p>No check-ins recorded today yet.</p></div>
+  {% endif %}
+</section>
+{% endblock %}

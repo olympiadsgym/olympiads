@@ -1,0 +1,58 @@
+{% extends "core/base.html" %}
+{% block title %}Register Member - OLYMPIADS{% endblock %}
+{% block nav_members %}bottom-nav__tab--active{% endblock %}
+{% block menu_members %}menu-item--active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">Register New Member</h2>
+</div>
+
+{% if error %}
+  <div class="flash flash--error alert alert--danger" role="alert">{{ error }}</div>
+{% endif %}
+
+<div class="card form-card">
+  <form method="post" novalidate id="register-form">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="name" class="form-label">Full Name</label>
+      <input type="text" id="name" name="name" class="form-input" placeholder="Full Name" required maxlength="150">
+    </div>
+    <div class="form-group">
+      <label for="email" class="form-label">Email Address</label>
+      <input type="email" id="email" name="email" class="form-input" placeholder="Email Address" required maxlength="254">
+      <span class="form-hint">Used for portal login and notifications.</span>
+    </div>
+    <div class="form-group">
+      <label for="contact" class="form-label">Contact Number</label>
+      <input type="tel" id="contact" name="contact" class="form-input" placeholder="Contact Number" required maxlength="20">
+    </div>
+    <div class="form-group">
+      <label for="plan_id" class="form-label">Membership Plan</label>
+      <select id="plan_id" name="plan_id" class="form-input form-select" required>
+        <option value="">Select a plan</option>
+        {% for plan in plans %}
+          <option value="{{ plan.pk }}" data-duration="{{ plan.duration_days }}">
+            {{ plan.plan_name }} - PHP {{ plan.price }} ({{ plan.duration_days }} days)
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="start_date" class="form-label">Start Date</label>
+        <input type="date" id="start_date" name="start_date" class="form-input" value="{{ today }}" required>
+      </div>
+      <div class="form-group">
+        <label for="expiry_preview" class="form-label">Expiry Date</label>
+        <input type="text" id="expiry_preview" class="form-input" readonly placeholder="Select plan and start date" aria-live="polite">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn--primary">Register Member</button>
+      <a href="{% url 'members:member_list' %}" class="btn btn--ghost">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
