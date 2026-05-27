@@ -6,6 +6,9 @@
 {% block content %}
 <div class="page-header">
   <h2 class="page-title">Members</h2>
+  <a href="{% url 'members:export_members_csv' %}" class="btn btn--ghost btn--sm" title="Download all members as CSV">
+    ⬇ Export CSV
+  </a>
 </div>
 
 <form method="get" class="filter-row" id="filterForm">
