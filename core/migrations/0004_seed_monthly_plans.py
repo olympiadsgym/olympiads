@@ -25,7 +25,7 @@ def reverse_plans(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0002_initial'),
+        ('core', '0003_seed_monthly_plans'),
     ]
 
     operations = [
