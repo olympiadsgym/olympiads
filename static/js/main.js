@@ -177,3 +177,16 @@ document.addEventListener('DOMContentLoaded', function () {
   setInterval(checkMidnight, 60000); // Check every minute
 
 });
+
+/* ── Password visibility toggle (global, outside DOMContentLoaded) ── */
+function togglePw(inputId, btn) {
+  var input = document.getElementById(inputId);
+  if (!input) return;
+  var isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  var eyeOn  = btn.querySelector('.eye-icon');
+  var eyeOff = btn.querySelector('.eye-off-icon');
+  if (eyeOn)  eyeOn.style.display  = isHidden ? 'none' : '';
+  if (eyeOff) eyeOff.style.display = isHidden ? ''     : 'none';
+  btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+}
