@@ -32,6 +32,40 @@
   </a>
 </div>
 
+<!-- Weekly Check-in Stats -->
+<section class="section">
+  <h3 class="section-title">Weekly Check-ins</h3>
+  <div class="card weekly-stats-card">
+    <div class="weekly-stats-grid">
+      <div class="weekly-stat">
+        <span class="weekly-stat__count">{{ this_week_count }}</span>
+        <span class="weekly-stat__label">This week<br><small>(since {{ start_of_this_week }})</small></span>
+      </div>
+      <div class="weekly-stat weekly-stat--muted">
+        <span class="weekly-stat__count">{{ last_week_count }}</span>
+        <span class="weekly-stat__label">Last week</span>
+      </div>
+      <div class="weekly-stat">
+        {% if week_change_pct is not None %}
+          {% if week_change_pct > 0 %}
+            <span class="weekly-stat__count weekly-stat__count--up">+{{ week_change_pct }}%</span>
+            <span class="weekly-stat__label">vs last week ↑</span>
+          {% elif week_change_pct < 0 %}
+            <span class="weekly-stat__count weekly-stat__count--down">{{ week_change_pct }}%</span>
+            <span class="weekly-stat__label">vs last week ↓</span>
+          {% else %}
+            <span class="weekly-stat__count">0%</span>
+            <span class="weekly-stat__label">vs last week →</span>
+          {% endif %}
+        {% else %}
+          <span class="weekly-stat__count">—</span>
+          <span class="weekly-stat__label">No data last week</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
 {% if expiring_soon %}
 <section class="section">
   <h3 class="section-title">Expiring Soon</h3>
@@ -56,7 +90,13 @@
 {% endif %}
 
 <section class="section">
-  <h3 class="section-title">Today's Check-ins ({{ todays_checkins.count }})</h3>
+  <div class="section-header-row">
+    <h3 class="section-title">Today's Check-ins ({{ todays_checkins.count }})</h3>
+    <form method="post" action="{% url 'core:refresh_all_statuses' %}" style="display:inline;">
+      {% csrf_token %}
+      <button type="submit" class="btn btn--ghost btn--sm">↻ Refresh Statuses</button>
+    </form>
+  </div>
   {% if todays_checkins %}
   <div class="table-wrap">
     <div class="card table-card">

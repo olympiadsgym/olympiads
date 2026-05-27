@@ -1,3 +1,4 @@
+import csv
 import logging
 import secrets
 import string
@@ -7,6 +8,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
 from django.utils import timezone
 from django.core.paginator import Paginator
+from django.http import HttpResponse
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +48,39 @@ def member_list_view(request):
         'status_filter': status_filter,
         'status_choices': Member.STATUS_CHOICES,
     })
+
+
+@admin_required
+def export_members_csv(request):
+    """Export the current member list as a CSV file."""
+    query = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', '')
+
+    members = Member.objects.filter(is_active=True).select_related('plan')
+    if query:
+        members = members.filter(name__icontains=query)
+    if status_filter:
+        members = members.filter(status=status_filter)
+    members = members.order_by('name')
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="olympiads_members.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Name', 'Email', 'Contact', 'Plan', 'Status', 'Start Date', 'Expiry Date', 'Days Remaining'])
+    for m in members:
+        writer.writerow([
+            m.name,
+            m.email,
+            m.contact,
+            m.plan.plan_name,
+            m.status,
+            m.start_date,
+            m.expiry_date,
+            m.days_remaining,
+        ])
+
+    return response
 
 
 @admin_required
@@ -343,6 +378,20 @@ def edit_member(request, pk):
 
 
 @admin_required
+def renew_member(request, pk):
+    """Renew a member's plan from today, extending by the plan's duration."""
+    if request.method == 'POST':
+        member = get_object_or_404(Member, pk=pk, is_active=True)
+        today = timezone.localdate()
+        member.start_date = today
+        member.expiry_date = today + timezone.timedelta(days=member.plan.duration_days)
+        member.status = member.compute_status()
+        member.save()
+        messages.success(request, f"{member.name}'s membership renewed until {member.expiry_date}.")
+    return redirect('members:edit_member', pk=pk)
+
+
+@admin_required
 def deactivate_member(request, pk):
     if request.method == 'POST':
         member = get_object_or_404(Member, pk=pk)
@@ -405,4 +454,33 @@ def portal_dashboard(request):
         'member': member,
         'page_obj': page,
         'announcements': announcements,
+    })
+
+
+@member_required
+def change_password(request):
+    """Allow a portal member to change their own password."""
+    user = get_object_or_404(User, pk=request.session['member_user_id'])
+    error = None
+    success = False
+
+    if request.method == 'POST':
+        current_pw = request.POST.get('current_password', '')
+        new_pw = request.POST.get('new_password', '')
+        confirm_pw = request.POST.get('confirm_password', '')
+
+        if not user.check_password(current_pw):
+            error = 'Current password is incorrect.'
+        elif len(new_pw) < 8:
+            error = 'New password must be at least 8 characters.'
+        elif new_pw != confirm_pw:
+            error = 'New passwords do not match.'
+        else:
+            user.set_password(new_pw)
+            user.save()
+            success = True
+
+    return render(request, 'members/change_password.html', {
+        'error': error,
+        'success': success,
     })
