@@ -177,19 +177,3 @@ document.addEventListener('DOMContentLoaded', function () {
   setInterval(checkMidnight, 60000); // Check every minute
 
 });
-
-// Password visibility toggle — used on login & change-password pages
-function togglePw(inputId, btn) {
-  var input = document.getElementById(inputId);
-  var eyeOn  = btn.querySelector('.eye-icon');
-  var eyeOff = btn.querySelector('.eye-off-icon');
-  if (input.type === 'password') {
-    input.type = 'text';
-    eyeOn.style.display  = 'none';
-    eyeOff.style.display = '';
-  } else {
-    input.type = 'password';
-    eyeOn.style.display  = '';
-    eyeOff.style.display = 'none';
-  }
-}
