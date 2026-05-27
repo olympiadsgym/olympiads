@@ -62,49 +62,75 @@ def register_member(request):
 
         if not all([name, email, contact, plan_id, start_date_str]):
             error = 'All fields are required.'
-        elif Member.objects.filter(email=email).exists():
-            error = 'This email is already registered.'
         else:
-            try:
-                plan = MembershipPlan.objects.get(pk=plan_id)
-                from datetime import date
-                start_date = date.fromisoformat(start_date_str)
-                expiry_date = start_date + timezone.timedelta(days=plan.duration_days)
-
-                # Create portal login user
-                temp_pw = _generate_temp_password()
-                user = User(email=email, role='member')
-                user.set_password(temp_pw)
-                user.save()
-
-                # Create member record
-                member = Member.objects.create(
-                    name=name,
-                    email=email,
-                    contact=contact,
-                    plan=plan,
-                    start_date=start_date,
-                    expiry_date=expiry_date,
-                    status='Active',
-                    user=user,
-                )
-
-                # Email credentials to member
+            existing_member = Member.objects.filter(email=email).first()
+            if existing_member and existing_member.is_active:
+                error = 'This email is already registered to an active member.'
+            else:
                 try:
-                    plain_text = (
-                        f"Hi {name},\n\n"
-                        f"Welcome to OLYMPIADS Gym! Your membership is now active.\n\n"
-                        f"Portal Login: {PORTAL_LOGIN_URL}\n"
-                        f"Email: {email}\n"
-                        f"Password: {temp_pw}\n\n"
-                        f"Plan: {plan.plan_name}\n"
-                        f"Start Date: {start_date}\n"
-                        f"Expiry Date: {expiry_date}\n\n"
-                        f"Please change your password after your first login.\n\n"
-                        f"— OLYMPIADS Gym"
-                    )
+                    plan = MembershipPlan.objects.get(pk=plan_id)
+                    from datetime import date
+                    start_date = date.fromisoformat(start_date_str)
+                    expiry_date = start_date + timezone.timedelta(days=plan.duration_days)
 
-                    html_body = f"""<!DOCTYPE html>
+                    temp_pw = _generate_temp_password()
+
+                    if existing_member:
+                        # Re-activating a previously deactivated member
+                        member = existing_member
+                        member.name = name
+                        member.contact = contact
+                        member.plan = plan
+                        member.start_date = start_date
+                        member.expiry_date = expiry_date
+                        member.status = 'Active'
+                        member.is_active = True
+                        member.save()
+
+                        # Reset their portal password
+                        if member.user:
+                            member.user.set_password(temp_pw)
+                            member.user.reset_failed()
+                            member.user.save()
+                        else:
+                            user = User(email=email, role='member')
+                            user.set_password(temp_pw)
+                            user.save()
+                            member.user = user
+                            member.save(update_fields=['user'])
+                    else:
+                        # Brand new member
+                        user = User(email=email, role='member')
+                        user.set_password(temp_pw)
+                        user.save()
+
+                        member = Member.objects.create(
+                            name=name,
+                            email=email,
+                            contact=contact,
+                            plan=plan,
+                            start_date=start_date,
+                            expiry_date=expiry_date,
+                            status='Active',
+                            user=user,
+                        )
+
+                    # Email credentials to member
+                    try:
+                        plain_text = (
+                            f"Hi {name},\n\n"
+                            f"Welcome to OLYMPIADS Gym! Your membership is now active.\n\n"
+                            f"Portal Login: {PORTAL_LOGIN_URL}\n"
+                            f"Email: {email}\n"
+                            f"Password: {temp_pw}\n\n"
+                            f"Plan: {plan.plan_name}\n"
+                            f"Start Date: {start_date}\n"
+                            f"Expiry Date: {expiry_date}\n\n"
+                            f"Please change your password after your first login.\n\n"
+                            f"— OLYMPIADS Gym"
+                        )
+
+                        html_body = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -231,30 +257,30 @@ def register_member(request):
 </body>
 </html>"""
 
-                    msg = EmailMultiAlternatives(
-                        subject="Welcome to OLYMPIADS Gym — Your Portal Login",
-                        body=plain_text,
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        to=[email],
-                    )
-                    msg.attach_alternative(html_body, "text/html")
-                    msg.send(fail_silently=False)
+                        msg = EmailMultiAlternatives(
+                            subject="Welcome to OLYMPIADS Gym — Your Portal Login",
+                            body=plain_text,
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            to=[email],
+                        )
+                        msg.attach_alternative(html_body, "text/html")
+                        msg.send(fail_silently=False)
 
-                except Exception as e:
-                    logger.exception("Failed to send registration email to %s", email)
-                    messages.warning(
-                        request,
-                        "Member was registered, but the welcome email could not be sent. "
-                        f"Email error: {e}"
-                    )
+                    except Exception as e:
+                        logger.exception("Failed to send registration email to %s", email)
+                        messages.warning(
+                            request,
+                            "Member was registered, but the welcome email could not be sent. "
+                            f"Email error: {e}"
+                        )
 
-                messages.success(request, f"{name} registered successfully.")
-                return redirect('members:member_list')
+                    messages.success(request, f"{name} registered successfully.")
+                    return redirect('members:member_list')
 
-            except MembershipPlan.DoesNotExist:
-                error = 'Invalid membership plan selected.'
-            except ValueError:
-                error = 'Invalid date format.'
+                except MembershipPlan.DoesNotExist:
+                    error = 'Invalid membership plan selected.'
+                except ValueError:
+                    error = 'Invalid date format.'
 
     return render(request, 'members/register.html', {
         'plans': plans,
