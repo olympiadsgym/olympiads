@@ -171,9 +171,22 @@ document.addEventListener('DOMContentLoaded', function () {
     var now = new Date();
     if (now.getHours() === 0 && now.getMinutes() === 0) {
       // Redirect to logout at midnight
-      window.location.href = document.querySelector('a[href*="logout"]')?.href || '/';
+      var logoutLink = document.querySelector('a[href*="logout"]');
+      window.location.href = logoutLink ? logoutLink.href : '/';
     }
   }
   setInterval(checkMidnight, 60000); // Check every minute
 
 });
+
+/* ── Password visibility toggle (global, outside DOMContentLoaded) ── */
+function togglePw(inputId, btn) {
+  var input = document.getElementById(inputId);
+  if (!input || !btn) return;
+  var show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  var eyeOn  = btn.querySelector('.eye-icon');
+  var eyeOff = btn.querySelector('.eye-off-icon');
+  if (eyeOn)  eyeOn.style.display  = show ? 'none' : '';
+  if (eyeOff) eyeOff.style.display = show ? ''     : 'none';
+}
