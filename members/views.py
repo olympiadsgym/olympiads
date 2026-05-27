@@ -478,6 +478,9 @@ def change_password(request):
         else:
             user.set_password(new_pw)
             user.save()
+            # Re-save session so it stays valid after password change
+            request.session['member_user_id'] = user.pk
+            request.session.modified = True
             success = True
 
     return render(request, 'members/change_password.html', {
