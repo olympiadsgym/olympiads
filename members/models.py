@@ -35,6 +35,14 @@ class User(models.Model):
             ip_address=ip_address or '',
         )
 
+    def reset_failed(self):
+        self.failed_login_count = 0
+        self.locked_until = None
+        self.save(update_fields=['failed_login_count', 'locked_until'])
+
+    def __str__(self):
+        return f"{self.email} ({self.role})"
+
 
 class FailedLoginLog(models.Model):
     account_identifier = models.CharField(max_length=254)
@@ -46,14 +54,6 @@ class FailedLoginLog(models.Model):
 
     def __str__(self):
         return f"{self.account_identifier} @ {self.ip_address} — {self.timestamp}"
-
-    def reset_failed(self):
-        self.failed_login_count = 0
-        self.locked_until = None
-        self.save(update_fields=['failed_login_count', 'locked_until'])
-
-    def __str__(self):
-        return f"{self.email} ({self.role})"
 
 
 class Member(models.Model):
@@ -141,7 +141,11 @@ class AttendanceLog(models.Model):
     )
     check_in_date = models.DateField()
     check_in_time = models.TimeField()
-    session_end_time = models.TimeField(null=True, blank=True, help_text="Time when this session expires (default: 2 hours after check-in)")
+    session_end_time = models.TimeField(
+        null=True,
+        blank=True,
+        help_text="Time when this session expires (default: 2 hours after check-in)",
+    )
 
     class Meta:
         ordering = ['-check_in_date', '-check_in_time']
