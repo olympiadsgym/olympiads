@@ -33,6 +33,7 @@
     <p class="announcement-card__body">{{ a.body }}</p>
     <form method="post" action="{% url 'core:announcement_delete' a.pk %}" class="announcement-card__footer">
       {% csrf_token %}
+      <a href="{% url 'core:announcement_edit' a.pk %}" class="btn btn--secondary btn--sm">Edit</a>
       <button type="submit" class="btn btn--danger btn--sm" onclick="return confirm('Delete this announcement?')">Delete</button>
     </form>
   </div>

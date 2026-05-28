@@ -12,5 +12,7 @@ urlpatterns = [
     path('attendance/<int:log_id>/timeout/', views.timeout_member, name='timeout_member'),
     path('announcements/', views.announcement_list, name='announcements'),
     path('announcements/create/', views.announcement_create, name='announcement_create'),
+    path('announcements/<int:pk>/edit/', views.announcement_edit, name='announcement_edit'),
     path('announcements/<int:pk>/delete/', views.announcement_delete, name='announcement_delete'),
+    path('notifications/', views.notification_log_view, name='notification_log'),
 ]

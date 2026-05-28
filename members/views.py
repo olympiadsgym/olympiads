@@ -425,7 +425,8 @@ def portal_login(request):
                 request.session['session_start_date'] = str(timezone.localdate())
                 return redirect('members:portal_dashboard')
             else:
-                user.increment_failed()
+                ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
+                user.increment_failed(ip_address=ip.split(',')[0].strip())
                 error = 'Invalid email or password.'
 
     return render(request, 'members/portal_login.html', {'error': error})
@@ -473,6 +474,12 @@ def change_password(request):
             error = 'Current password is incorrect.'
         elif len(new_pw) < 8:
             error = 'New password must be at least 8 characters.'
+        elif not any(c.isupper() for c in new_pw):
+            error = 'New password must contain at least one uppercase letter.'
+        elif not any(c.islower() for c in new_pw):
+            error = 'New password must contain at least one lowercase letter.'
+        elif not any(c.isdigit() for c in new_pw):
+            error = 'New password must contain at least one number.'
         elif new_pw != confirm_pw:
             error = 'New passwords do not match.'
         else:

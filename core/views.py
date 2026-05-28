@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Q, Count
+from django.core.paginator import Paginator
 import datetime
 
 from .models import Announcement, NotificationLog
@@ -34,7 +35,8 @@ def login_view(request):
                 request.session['session_start_date'] = str(timezone.localdate())
                 return redirect('core:dashboard')
             else:
-                user.increment_failed()
+                ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
+                user.increment_failed(ip_address=ip.split(',')[0].strip())
                 error = 'Invalid email or password.'
 
     return render(request, 'core/login.html', {'error': error})
@@ -219,3 +221,34 @@ def announcement_delete(request, pk):
         announcement.delete()
         messages.success(request, 'Announcement deleted.')
     return redirect('core:announcements')
+
+
+@admin_required
+def announcement_edit(request, pk):
+    announcement = get_object_or_404(Announcement, pk=pk)
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        body = request.POST.get('body', '').strip()
+        if title and body:
+            announcement.title = title
+            announcement.body = body
+            announcement.save()
+            messages.success(request, 'Announcement updated.')
+            return redirect('core:announcements')
+        else:
+            messages.error(request, 'Title and body are required.')
+    return render(request, 'core/announcement_edit.html', {'announcement': announcement})
+
+@admin_required
+def notification_log_view(request):
+    status_filter = request.GET.get('status', '')
+    logs = NotificationLog.objects.select_related('member').order_by('-sent_at')
+    if status_filter:
+        logs = logs.filter(status=status_filter)
+    paginator = Paginator(logs, 30)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'core/notification_log.html', {
+        'page_obj': page,
+        'status_filter': status_filter,
+        'status_choices': NotificationLog.STATUS_CHOICES,
+    })

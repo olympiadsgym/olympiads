@@ -24,11 +24,28 @@ class User(models.Model):
             return True
         return False
 
-    def increment_failed(self):
+    def increment_failed(self, ip_address=None):
         self.failed_login_count += 1
         if self.failed_login_count >= 5:
             self.locked_until = timezone.now() + datetime.timedelta(minutes=15)
         self.save(update_fields=['failed_login_count', 'locked_until'])
+        # Log the failed attempt with timestamp and IP (NFR-S06)
+        FailedLoginLog.objects.create(
+            account_identifier=self.email,
+            ip_address=ip_address or '',
+        )
+
+
+class FailedLoginLog(models.Model):
+    account_identifier = models.CharField(max_length=254)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.account_identifier} @ {self.ip_address} — {self.timestamp}"
 
     def reset_failed(self):
         self.failed_login_count = 0
@@ -71,7 +88,7 @@ class Member(models.Model):
         """
         BR-01: Active — has checked in within the last 7 days and membership not expired.
         BR-02: Inactive — no check-in for more than 7 days and membership not expired.
-        BR-03: Expiring Soon — expiry within 3 days.
+        BR-03: Expiring Soon — expiry within 7 days.
         BR-04: Expired — expiry_date < today.
         """
         today = timezone.localdate()
@@ -80,7 +97,7 @@ class Member(models.Model):
             return 'Expired'
 
         days_left = (self.expiry_date - today).days
-        if days_left <= 3:
+        if days_left <= 7:
             return 'Expiring Soon'
 
         last = self.last_checkin()

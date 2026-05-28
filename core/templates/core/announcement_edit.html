@@ -1,0 +1,29 @@
+{% extends "core/base.html" %}
+{% block title %}Edit Announcement - OLYMPIADS{% endblock %}
+{% block nav_announce %}bottom-nav__tab--active{% endblock %}
+{% block menu_announce %}menu-item--active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">Edit Announcement</h2>
+</div>
+
+<div class="card compose-card">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="title" class="form-label">Title</label>
+      <input type="text" id="title" name="title" class="form-input"
+             value="{{ announcement.title }}" required maxlength="200">
+    </div>
+    <div class="form-group">
+      <label for="body" class="form-label">Message</label>
+      <textarea id="body" name="body" class="form-input form-textarea" rows="4" required>{{ announcement.body }}</textarea>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button type="submit" class="btn btn--primary">Save Changes</button>
+      <a href="{% url 'core:announcements' %}" class="btn btn--secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

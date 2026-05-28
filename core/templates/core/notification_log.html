@@ -1,0 +1,75 @@
+{% extends "core/base.html" %}
+{% block title %}Notification Log - OLYMPIADS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">Notification Log</h2>
+</div>
+
+<!-- Filter -->
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <label class="form-label" style="margin:0;">Filter by status:</label>
+    <select name="status" class="form-input" style="width:auto;" onchange="this.form.submit()">
+      <option value="">All</option>
+      {% for val, label in status_choices %}
+        <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    {% if status_filter %}
+      <a href="{% url 'core:notification_log' %}" class="btn btn--secondary btn--sm">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{% if page_obj.object_list %}
+<div class="card" style="padding:0;overflow:hidden;">
+  <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <thead>
+      <tr style="background:rgba(255,255,255,0.04);text-align:left;">
+        <th style="padding:12px 16px;color:#9ca3af;">Member</th>
+        <th style="padding:12px 16px;color:#9ca3af;">Type</th>
+        <th style="padding:12px 16px;color:#9ca3af;">Sent At</th>
+        <th style="padding:12px 16px;color:#9ca3af;">Status</th>
+        <th style="padding:12px 16px;color:#9ca3af;">Retries</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in page_obj %}
+      <tr style="border-top:1px solid rgba(255,255,255,0.05);">
+        <td style="padding:12px 16px;color:#f9fafb;">{{ log.member.name }}</td>
+        <td style="padding:12px 16px;color:#d1d5db;">{{ log.get_notification_type_display }}</td>
+        <td style="padding:12px 16px;color:#d1d5db;">{{ log.sent_at|date:"M d, Y g:i A" }}</td>
+        <td style="padding:12px 16px;">
+          {% if log.status == 'sent' %}
+            <span style="color:#34d399;font-weight:600;">Sent</span>
+          {% elif log.status == 'failed' %}
+            <span style="color:#f87171;font-weight:600;">Failed</span>
+          {% else %}
+            <span style="color:#fbbf24;font-weight:600;">Retry Failed</span>
+          {% endif %}
+        </td>
+        <td style="padding:12px 16px;color:#9ca3af;">{{ log.retry_count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div style="display:flex;gap:8px;justify-content:center;margin-top:16px;">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="btn btn--secondary btn--sm">← Prev</a>
+  {% endif %}
+  <span style="padding:6px 12px;color:#9ca3af;font-size:13px;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="btn btn--secondary btn--sm">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card empty-state"><p>No notification logs found.</p></div>
+{% endif %}
+{% endblock %}
