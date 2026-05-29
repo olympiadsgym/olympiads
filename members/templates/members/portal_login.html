@@ -10,38 +10,47 @@
   <link rel="stylesheet" href="{% static 'css/main.css' %}">
   <script>(function(){var t=localStorage.getItem('olympiads_theme')||'';document.documentElement.setAttribute('data-theme',t);})();</script>
   <style>
-    .login-body {
-      position: relative;
+    .login-card {
+      background: rgba(255, 255, 255, 0.10) !important;
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.20) !important;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
     }
-    .login-bg {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
+
+    .login-logo__name,
+    .login-logo__sub,
+    .form-label,
+    .login-portal-link a {
+      color: #ffffff !important;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
-    .login-bg img {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center;
-      opacity: 0;
-      transition: opacity 1.4s ease-in-out;
-      will-change: opacity;
+
+    .login-logo__mark {
+      color: #ffffff !important;
     }
-    .login-bg img.active {
-      opacity: 1;
+
+    .form-input {
+      background: rgba(255, 255, 255, 0.15) !important;
+      border: 1px solid rgba(255, 255, 255, 0.25) !important;
+      color: #ffffff !important;
     }
-    .login-bg-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.52);
-      backdrop-filter: blur(1.5px);
-      z-index: 1;
+
+    .form-input::placeholder {
+      color: rgba(255, 255, 255, 0.55) !important;
     }
-    .login-container {
-      position: relative;
-      z-index: 2;
+
+    .form-input:focus {
+      background: rgba(255, 255, 255, 0.22) !important;
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.45) !important;
+    }
+
+    .flash--info,
+    .flash--error {
+      background: rgba(255, 255, 255, 0.12) !important;
+      border: 1px solid rgba(255, 255, 255, 0.20) !important;
+      color: #ffffff !important;
     }
   </style>
 </head>
