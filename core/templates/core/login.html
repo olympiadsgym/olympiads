@@ -126,23 +126,37 @@
     .form-input {
       width: 100%;
       padding: 10px 14px;
-      background: rgba(255, 255, 255, 0.10) !important;
-      border: 1px solid rgba(255, 255, 255, 0.22) !important;
+      background: rgba(255, 255, 255, 0.12) !important;
+      border: 1px solid rgba(255, 255, 255, 0.25) !important;
       border-radius: 8px;
       color: #ffffff !important;
       font-size: 0.92rem;
       font-family: 'Poppins', sans-serif;
       outline: none;
       transition: border-color 0.2s, background 0.2s;
+      -webkit-text-fill-color: #ffffff !important;
+      caret-color: #ffffff !important;
     }
 
     .form-input::placeholder {
-      color: rgba(255,255,255,0.40) !important;
+      color: rgba(255, 255, 255, 0.45) !important;
+      -webkit-text-fill-color: rgba(255, 255, 255, 0.45) !important;
     }
 
     .form-input:focus {
       background: rgba(255, 255, 255, 0.18) !important;
       border-color: rgba(255, 255, 255, 0.45) !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+    }
+
+    .form-input:-webkit-autofill,
+    .form-input:-webkit-autofill:hover,
+    .form-input:-webkit-autofill:focus {
+      -webkit-text-fill-color: #ffffff !important;
+      -webkit-box-shadow: 0 0 0px 1000px rgba(10, 20, 60, 0.6) inset !important;
+      caret-color: #ffffff !important;
+      transition: background-color 5000s ease-in-out 0s;
     }
 
     .pw-wrap {
