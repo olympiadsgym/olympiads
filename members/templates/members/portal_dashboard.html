@@ -87,8 +87,14 @@
     </section>
 
     <section class="portal-section">
-      <h3 class="section-title">Visit History</h3>
-      {% if page_obj.object_list %}
+      <h3 class="section-title">
+        Visit History
+        {% if total_visits %}
+          <span class="section-count">({{ total_visits }} total)</span>
+        {% endif %}
+      </h3>
+
+      {% if total_visits %}
       <div class="table-wrap">
         <div class="card table-card">
           <table class="table">
@@ -105,7 +111,9 @@
           </table>
         </div>
       </div>
-      {% if page_obj.has_other_pages %}
+
+      {# US-08: pagination controls only appear when total visits exceed 20 #}
+      {% if visits_paginated and page_obj.has_other_pages %}
       <div class="pagination">
         {% if page_obj.has_previous %}
           <a href="?page={{ page_obj.previous_page_number }}" class="btn btn--ghost btn--sm">Prev</a>
@@ -116,6 +124,7 @@
         {% endif %}
       </div>
       {% endif %}
+
       {% else %}
       <div class="card empty-state"><p>No visits recorded yet.</p></div>
       {% endif %}

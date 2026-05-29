@@ -20,6 +20,8 @@ from .models import Member, AttendanceLog, User
 
 PORTAL_LOGIN_URL = "https://olympiads-beta.vercel.app/portal/login/"
 
+VISIT_HISTORY_THRESHOLD = 20  # US-08: paginate only when total exceeds this
+
 
 def _generate_temp_password(length=12):
     alphabet = string.ascii_letters + string.digits
@@ -463,8 +465,15 @@ def portal_dashboard(request):
     member.save(update_fields=['status'])
 
     all_logs = member.attendance_logs.order_by('-check_in_date', '-check_in_time')
-    paginator = Paginator(all_logs, 20)
-    page = paginator.get_page(request.GET.get('page'))
+    total_visits = all_logs.count()
+
+    # US-08: only paginate when total visits exceed the threshold (20).
+    # When 20 or fewer, pass all entries directly so no pagination controls appear.
+    if total_visits > VISIT_HISTORY_THRESHOLD:
+        paginator = Paginator(all_logs, VISIT_HISTORY_THRESHOLD)
+        page_obj = paginator.get_page(request.GET.get('page'))
+    else:
+        page_obj = all_logs  # plain queryset — template uses {% for log in page_obj %}
 
     all_announcements = Announcement.objects.all()
     ann_paginator = Paginator(all_announcements, 10)
@@ -472,7 +481,9 @@ def portal_dashboard(request):
 
     return render(request, 'members/portal_dashboard.html', {
         'member': member,
-        'page_obj': page,
+        'page_obj': page_obj,
+        'total_visits': total_visits,
+        'visits_paginated': total_visits > VISIT_HISTORY_THRESHOLD,
         'announcements': announcements_page,
     })
 
