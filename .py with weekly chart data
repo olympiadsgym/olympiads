@@ -1,0 +1,197 @@
+warning: in the working copy of 'core/views.py', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/core/views.py b/core/views.py[m
+[1mindex 94db289..7655a7f 100644[m
+[1m--- a/core/views.py[m
+[1m+++ b/core/views.py[m
+[36m@@ -1,4 +1,4 @@[m
+[31m-from django.shortcuts import render, redirect, get_object_or_404[m
+[32m+[m[32m﻿from django.shortcuts import render, redirect, get_object_or_404[m
+ from django.contrib import messages[m
+ from django.utils import timezone[m
+ from django.db.models import Q, Count[m
+[36m@@ -11,17 +11,13 @@[m [mfrom .decorators import admin_required[m
+ from members.models import Member, AttendanceLog, User[m
+ [m
+ [m
+[31m-# ─── Authentication ───────────────────────────────────────────────[m
+[31m-[m
+ def login_view(request):[m
+     if request.session.get('admin_id'):[m
+         return redirect('core:dashboard')[m
+[31m-[m
+     error = None[m
+     if request.method == 'POST':[m
+         email = request.POST.get('email', '').strip().lower()[m
+         password = request.POST.get('password', '')[m
+[31m-[m
+         try:[m
+             user = User.objects.get(email=email, role='admin')[m
+         except User.DoesNotExist:[m
+[36m@@ -39,7 +35,6 @@[m [mdef login_view(request):[m
+                 ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))[m
+                 user.increment_failed(ip_address=ip.split(',')[0].strip())[m
+                 error = 'Invalid email or password.'[m
+[31m-[m
+     return render(request, 'core/login.html', {'error': error})[m
+ [m
+ [m
+[36m@@ -48,13 +43,10 @@[m [mdef logout_view(request):[m
+     return redirect('core:login')[m
+ [m
+ [m
+[31m-# ─── Dashboard ────────────────────────────────────────────────────[m
+[31m-[m
+ @admin_required[m
+ def dashboard_view(request):[m
+     today = timezone.localdate()[m
+     active_members = Member.objects.filter(is_active=True)[m
+[31m-[m
+     counts = {[m
+         'active': active_members.filter(status='Active').count(),[m
+         'inactive': active_members.filter(status='Inactive').count(),[m
+[36m@@ -62,7 +54,6 @@[m [mdef dashboard_view(request):[m
+         'expired': active_members.filter(status='Expired').count(),[m
+         'total': active_members.count(),[m
+     }[m
+[31m-[m
+     expiring_soon = active_members.filter(status='Expiring Soon').order_by('expiry_date')[:10][m
+     todays_checkins = ([m
+         AttendanceLog.objects[m
+[36m@@ -70,28 +61,21 @@[m [mdef dashboard_view(request):[m
+         .select_related('member')[m
+         .order_by('-check_in_time')[m
+     )[m
+[31m-[m
+[31m-    # Weekly check-in stats: this week (Mon–today) vs same 7-day window last week[m
+[31m-    start_of_this_week = today - datetime.timedelta(days=today.weekday())  # Monday[m
+[32m+[m[32m    start_of_this_week = today - datetime.timedelta(days=today.weekday())[m
+     start_of_last_week = start_of_this_week - datetime.timedelta(days=7)[m
+     end_of_last_week   = start_of_this_week - datetime.timedelta(days=1)[m
+[31m-[m
+     this_week_count = AttendanceLog.objects.filter([m
+         check_in_date__gte=start_of_this_week,[m
+         check_in_date__lte=today,[m
+     ).count()[m
+[31m-[m
+     last_week_count = AttendanceLog.objects.filter([m
+         check_in_date__gte=start_of_last_week,[m
+         check_in_date__lte=end_of_last_week,[m
+     ).count()[m
+[31m-[m
+     if last_week_count > 0:[m
+         week_change_pct = round((this_week_count - last_week_count) / last_week_count * 100)[m
+     else:[m
+[31m-        week_change_pct = None  # can't compute % when last week had 0[m
+[31m-[m
+[31m-    # 8-week history for bar chart (oldest → newest)[m
+[32m+[m[32m        week_change_pct = None[m
+     weekly_chart_labels = [][m
+     weekly_chart_data = [][m
+     for i in range(7, -1, -1):[m
+[36m@@ -103,7 +87,6 @@[m [mdef dashboard_view(request):[m
+         ).count()[m
+         weekly_chart_labels.append(ws.strftime('%b %d'))[m
+         weekly_chart_data.append(count)[m
+[31m-[m
+     return render(request, 'core/dashboard.html', {[m
+         'counts': counts,[m
+         'expiring_soon': expiring_soon,[m
+[36m@@ -120,7 +103,6 @@[m [mdef dashboard_view(request):[m
+ [m
+ @admin_required[m
+ def refresh_all_statuses(request):[m
+[31m-    """Recompute and persist status for every active member."""[m
+     if request.method == 'POST':[m
+         members = Member.objects.filter(is_active=True)[m
+         updated = 0[m
+[36m@@ -134,36 +116,27 @@[m [mdef refresh_all_statuses(request):[m
+     return redirect('core:dashboard')[m
+ [m
+ [m
+[31m-# ─── Check-In ─────────────────────────────────────────────────────[m
+[31m-[m
+ @admin_required[m
+ def checkin_view(request):[m
+     search_results = [][m
+     checkin_result = None[m
+     error = None[m
+     query = request.GET.get('q', '').strip()[m
+[31m-[m
+     if query:[m
+         search_results = Member.objects.filter([m
+             is_active=True,[m
+             name__icontains=query[m
+         ).select_related('plan')[:20][m
+[31m-[m
+     if request.method == 'POST':[m
+         member_id = request.POST.get('member_id')[m
+         member = get_object_or_404(Member, pk=member_id, is_active=True)[m
+[31m-[m
+[31m-        # Block expired members[m
+         if member.status == 'Expired':[m
+             error = f"Membership expired on {member.expiry_date}. Check-in not allowed."[m
+         else:[m
+             now = timezone.localtime()[m
+[31m-[m
+[31m-            # Duplicate check within 30 minutes — works across midnight[m
+             recent = AttendanceLog.objects.filter([m
+                 member=member[m
+             ).order_by('-check_in_date', '-check_in_time').first()[m
+[31m-[m
+             if recent:[m
+                 last_dt = timezone.make_aware([m
+                     datetime.datetime.combine(recent.check_in_date, recent.check_in_time)[m
+[36m@@ -173,24 +146,17 @@[m [mdef checkin_view(request):[m
+                         f"Already checked in at {recent.check_in_time.strftime('%I:%M %p')} "[m
+                         f"— less than 30 minutes ago."[m
+                     )[m
+[31m-[m
+             if not error:[m
+                 log = AttendanceLog.objects.create([m
+                     member=member,[m
+                     check_in_date=now.date(),[m
+                     check_in_time=now.time(),[m
+                 )[m
+[31m-                # Compute and store session end time (2 hours by default)[m
+                 log.compute_session_end_time(duration_minutes=120)[m
+                 log.save(update_fields=['session_end_time'])[m
+[31m-                # Recompute status after check-in[m
+                 member.status = member.compute_status()[m
+                 member.save(update_fields=['status'])[m
+[31m-                checkin_result = {[m
+[31m-                    'member': member,[m
+[31m-                    'log': log,[m
+[31m-                }[m
+[31m-[m
+[32m+[m[32m                checkin_result = {'member': member, 'log': log}[m
+     return render(request, 'core/checkin.html', {[m
+         'search_results': search_results,[m
+         'query': query,[m
+[36m@@ -199,11 +165,8 @@[m [mdef checkin_view(request):[m
+     })[m
+ [m
+ [m
+[31m-# ─── Member Timeout ───────────────────────────────────────────────[m
+[31m-[m
+ @admin_required[m
+ def timeout_member(request, log_id):[m
+[31m-    """End a member's session immediately."""[m
+     log = get_object_or_404(AttendanceLog, pk=log_id)[m
+     now = timezone.localtime()[m
+     log.session_end_time = now.time()[m
+[36m@@ -212,8 +175,6 @@[m [mdef timeout_member(request, log_id):[m
+     return redirect('core:dashboard')[m
+ [m
+ [m
+[31m-# ─── Announcements ────────────────────────────────────────────────[m
+[31m-[m
+ @admin_required[m
+ def announcement_list(request):[m
+     announcements = Announcement.objects.all()[m
+[36m@@ -272,4 +233,4 @@[m [mdef notification_log_view(request):[m
+         'page_obj': page,[m
+         'status_filter': status_filter,[m
+         'status_choices': NotificationLog.STATUS_CHOICES,[m
+[31m-    })[m
+\ No newline at end of file[m
+[32m+[m[32m    })[m

@@ -342,6 +342,35 @@ a:hover { text-decoration:underline; }
 .login-container { width:100%; max-width:400px; }
 .login-card { background:var(--bg-secondary); border-radius:var(--radius-lg); padding:36px 28px; border:1px solid var(--border); box-shadow:var(--shadow-lg); }
 .login-top-actions { display:flex; justify-content:flex-end; margin-bottom:16px; }
+/* ── Login Background Image ── */
+.login-body {
+  position: relative;
+  background-image: url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1920&q=80');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.login-bg-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 0;
+}
+
+.login-container {
+  position: relative;
+  z-index: 1;
+}
+
+[data-theme="dark"] .login-body {
+  background-image: url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1920&q=80');
+}
+
+[data-theme="dark"] .login-bg-overlay {
+  background: rgba(0, 0, 0, 0.70);
+}
 .login-logo { text-align:center; margin-bottom:24px; }
 .login-logo__icon { font-size:36px; display:block; margin-bottom:8px; }
 .login-logo__name { font-size:26px; font-weight:800; color:var(--accent); letter-spacing:.06em; }
