@@ -1,4 +1,5 @@
 import csv
+import re
 import logging
 import secrets
 import string
@@ -9,6 +10,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.http import HttpResponse
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,19 @@ PORTAL_LOGIN_URL = "https://olympiads-beta.vercel.app/portal/login/"
 def _generate_temp_password(length=12):
     alphabet = string.ascii_letters + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+
+def _validate_password_policy(password):
+    """Returns an error string or None if the password passes NFR-S02."""
+    if len(password) < 8:
+        return 'Password must be at least 8 characters.'
+    if not re.search(r'[A-Z]', password):
+        return 'Password must contain at least one uppercase letter.'
+    if not re.search(r'[a-z]', password):
+        return 'Password must contain at least one lowercase letter.'
+    if not re.search(r'[0-9]', password):
+        return 'Password must contain at least one number.'
+    return None
 
 
 # --- Admin: Member Management ------------------------------------
@@ -112,45 +127,45 @@ def register_member(request):
 
                     if existing_member:
                         # Re-activating a previously deactivated member
-                        member = existing_member
-                        member.name = name
-                        member.contact = contact
-                        member.plan = plan
-                        member.start_date = start_date
-                        member.expiry_date = expiry_date
-                        member.status = 'Active'
-                        member.is_active = True
-                        member.save()
+                        with transaction.atomic():
+                            member = existing_member
+                            member.name = name
+                            member.contact = contact
+                            member.plan = plan
+                            member.start_date = start_date
+                            member.expiry_date = expiry_date
+                            member.status = 'Active'
+                            member.is_active = True
+                            member.save()
 
-                        # Reset their portal password
-                        if member.user:
-                            member.user.set_password(temp_pw)
-                            member.user.reset_failed()
-                            member.user.save()
-                        else:
+                            if member.user:
+                                member.user.set_password(temp_pw)
+                                member.user.reset_failed()
+                                member.user.save()
+                            else:
+                                user = User(email=email, role='member')
+                                user.set_password(temp_pw)
+                                user.save()
+                                member.user = user
+                                member.save(update_fields=['user'])
+                    else:
+                        # Brand new member
+                        with transaction.atomic():
                             user = User(email=email, role='member')
                             user.set_password(temp_pw)
                             user.save()
-                            member.user = user
-                            member.save(update_fields=['user'])
-                    else:
-                        # Brand new member
-                        user = User(email=email, role='member')
-                        user.set_password(temp_pw)
-                        user.save()
 
-                        member = Member.objects.create(
-                            name=name,
-                            email=email,
-                            contact=contact,
-                            plan=plan,
-                            start_date=start_date,
-                            expiry_date=expiry_date,
-                            status='Active',
-                            user=user,
-                        )
-
-                    # Email credentials to member
+                            member = Member.objects.create(
+                                name=name,
+                                email=email,
+                                contact=contact,
+                                plan=plan,
+                                start_date=start_date,
+                                expiry_date=expiry_date,
+                                status='Active',
+                                user=user,
+                            )
+                    # Email is sent AFTER the transaction commits
                     try:
                         plain_text = (
                             f"Hi {name},\n\n"
@@ -393,12 +408,14 @@ def renew_member(request, pk):
 
 @admin_required
 def deactivate_member(request, pk):
+    member = get_object_or_404(Member, pk=pk)
+    if request.method == 'GET':
+        return render(request, 'members/deactivate_confirm.html', {'member': member})
     if request.method == 'POST':
-        member = get_object_or_404(Member, pk=pk)
         member.is_active = False
         member.save(update_fields=['is_active'])
         messages.success(request, f"{member.name} has been deactivated.")
-    return redirect('members:member_list')
+        return redirect('members:member_list')
 
 
 # --- Member Portal ------------------------------------------------
@@ -449,12 +466,14 @@ def portal_dashboard(request):
     paginator = Paginator(all_logs, 20)
     page = paginator.get_page(request.GET.get('page'))
 
-    announcements = Announcement.objects.all()[:10]
+    all_announcements = Announcement.objects.all()
+    ann_paginator = Paginator(all_announcements, 10)
+    announcements_page = ann_paginator.get_page(request.GET.get('ann_page'))
 
     return render(request, 'members/portal_dashboard.html', {
         'member': member,
         'page_obj': page,
-        'announcements': announcements,
+        'announcements': announcements_page,
     })
 
 
@@ -472,23 +491,19 @@ def change_password(request):
 
         if not user.check_password(current_pw):
             error = 'Current password is incorrect.'
-        elif len(new_pw) < 8:
-            error = 'New password must be at least 8 characters.'
-        elif not any(c.isupper() for c in new_pw):
-            error = 'New password must contain at least one uppercase letter.'
-        elif not any(c.islower() for c in new_pw):
-            error = 'New password must contain at least one lowercase letter.'
-        elif not any(c.isdigit() for c in new_pw):
-            error = 'New password must contain at least one number.'
-        elif new_pw != confirm_pw:
-            error = 'New passwords do not match.'
         else:
-            user.set_password(new_pw)
-            user.save()
-            # Re-save session so it stays valid after password change
-            request.session['member_user_id'] = user.pk
-            request.session.modified = True
-            success = True
+            policy_error = _validate_password_policy(new_pw)
+            if policy_error:
+                error = policy_error
+            elif new_pw != confirm_pw:
+                error = 'New passwords do not match.'
+            else:
+                user.set_password(new_pw)
+                user.save()
+                # Re-save session so it stays valid after password change
+                request.session['member_user_id'] = user.pk
+                request.session.modified = True
+                success = True
 
     return render(request, 'members/change_password.html', {
         'error': error,

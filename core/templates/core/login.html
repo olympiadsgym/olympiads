@@ -27,6 +27,10 @@
         <p class="login-logo__sub">Admin Panel</p>
       </div>
 
+      {% if request.session.session_timed_out %}
+        <div class="flash flash--info alert alert--info" role="alert">Your session expired due to inactivity. Please log in again.</div>
+      {% endif %}
+
       {% if error %}
         <div class="flash flash--error alert alert--danger" role="alert">{{ error }}</div>
       {% endif %}

@@ -76,6 +76,7 @@ class Member(models.Model):
     expiry_date = models.DateField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Active')
     is_active = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
     user = models.OneToOneField(
         User,
         on_delete=models.SET_NULL,

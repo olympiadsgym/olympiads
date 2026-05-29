@@ -31,12 +31,12 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'core.middleware.SessionExpireMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'core.middleware.MidnightSessionExpireMiddleware',
 ]
 
 ROOT_URLCONF = 'olympiads.urls'
@@ -99,6 +99,10 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='').strip()
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='').replace(' ', '')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 ADMIN_ALERT_EMAIL = config('ADMIN_ALERT_EMAIL', default='').strip()
+
+# Scheduler — daily task run time (24-hour format, default 10 PM)
+DAILY_TASK_HOUR = config('DAILY_TASK_HOUR', default=22, cast=int)
+DAILY_TASK_MINUTE = config('DAILY_TASK_MINUTE', default=0, cast=int)
 
 # Session — 30 minute idle timeout
 SESSION_COOKIE_AGE = 1800

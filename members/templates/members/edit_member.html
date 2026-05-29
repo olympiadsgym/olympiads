@@ -72,5 +72,6 @@
       <a href="{% url 'members:member_list' %}" class="btn btn--ghost">Cancel</a>
     </div>
   </form>
+  <p class="form-hint" style="margin-top:12px;">Last updated: {{ member.updated_at|date:"N j, Y g:i A" }}</p>
 </div>
 {% endblock %}

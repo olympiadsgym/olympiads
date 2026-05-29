@@ -142,22 +142,26 @@ def checkin_view(request):
             error = f"Membership expired on {member.expiry_date}. Check-in not allowed."
         else:
             now = timezone.localtime()
-            today = now.date()
-            cutoff = now - datetime.timedelta(minutes=30)
 
-            # Duplicate check within 30 minutes
+            # Duplicate check within 30 minutes — works across midnight
             recent = AttendanceLog.objects.filter(
-                member=member,
-                check_in_date=today,
-                check_in_time__gte=cutoff.time(),
-            ).first()
+                member=member
+            ).order_by('-check_in_date', '-check_in_time').first()
 
             if recent:
-                error = f"Already checked in at {recent.check_in_time.strftime('%I:%M %p')} — less than 30 minutes ago."
-            else:
+                last_dt = timezone.make_aware(
+                    datetime.datetime.combine(recent.check_in_date, recent.check_in_time)
+                )
+                if (now - last_dt).total_seconds() < 1800:
+                    error = (
+                        f"Already checked in at {recent.check_in_time.strftime('%I:%M %p')} "
+                        f"— less than 30 minutes ago."
+                    )
+
+            if not error:
                 log = AttendanceLog.objects.create(
                     member=member,
-                    check_in_date=today,
+                    check_in_date=now.date(),
                     check_in_time=now.time(),
                 )
                 # Compute and store session end time (2 hours by default)
@@ -238,6 +242,7 @@ def announcement_edit(request, pk):
         else:
             messages.error(request, 'Title and body are required.')
     return render(request, 'core/announcement_edit.html', {'announcement': announcement})
+
 
 @admin_required
 def notification_log_view(request):

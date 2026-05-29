@@ -1,0 +1,14 @@
+{% extends "core/base.html" %}
+{% block content %}
+<div class="card">
+  <h2>Deactivate member</h2>
+  <p>Are you sure you want to deactivate <strong>{{ member.name }}</strong>?
+     Their record will be archived and excluded from active counts,
+     but will remain accessible for historical review.</p>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Yes, deactivate</button>
+    <a href="{% url 'members:edit_member' member.pk %}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}
