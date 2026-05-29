@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.db.models import Q, Count
 from django.core.paginator import Paginator
 import datetime
+import json
 
 from .models import Announcement, NotificationLog
 from .decorators import admin_required
@@ -73,7 +74,7 @@ def dashboard_view(request):
     # Weekly check-in stats: this week (Mon–today) vs same 7-day window last week
     start_of_this_week = today - datetime.timedelta(days=today.weekday())  # Monday
     start_of_last_week = start_of_this_week - datetime.timedelta(days=7)
-    end_of_last_week = start_of_this_week - datetime.timedelta(days=1)
+    end_of_last_week   = start_of_this_week - datetime.timedelta(days=1)
 
     this_week_count = AttendanceLog.objects.filter(
         check_in_date__gte=start_of_this_week,
@@ -90,6 +91,19 @@ def dashboard_view(request):
     else:
         week_change_pct = None  # can't compute % when last week had 0
 
+    # 8-week history for bar chart (oldest → newest)
+    weekly_chart_labels = []
+    weekly_chart_data = []
+    for i in range(7, -1, -1):
+        ws = start_of_this_week - datetime.timedelta(weeks=i)
+        we = ws + datetime.timedelta(days=6)
+        count = AttendanceLog.objects.filter(
+            check_in_date__gte=ws,
+            check_in_date__lte=min(we, today),
+        ).count()
+        weekly_chart_labels.append(ws.strftime('%b %d'))
+        weekly_chart_data.append(count)
+
     return render(request, 'core/dashboard.html', {
         'counts': counts,
         'expiring_soon': expiring_soon,
@@ -99,6 +113,8 @@ def dashboard_view(request):
         'last_week_count': last_week_count,
         'week_change_pct': week_change_pct,
         'start_of_this_week': start_of_this_week,
+        'weekly_chart_labels': json.dumps(weekly_chart_labels),
+        'weekly_chart_data': json.dumps(weekly_chart_data),
     })
 
 
