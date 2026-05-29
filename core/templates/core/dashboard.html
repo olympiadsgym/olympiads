@@ -35,34 +35,59 @@
 <!-- Weekly Check-in Stats -->
 <section class="section">
   <h3 class="section-title">Weekly Check-ins</h3>
-  <div class="card weekly-stats-card">
-    <div class="weekly-stats-grid">
-      <div class="weekly-stat">
-        <span class="weekly-stat__count">{{ this_week_count }}</span>
-        <span class="weekly-stat__label">This week<br><small>(since {{ start_of_this_week }})</small></span>
+  <div class="card" style="padding: 1.25rem;">
+
+    <!-- Summary numbers -->
+    <div style="display:flex; gap:2rem; flex-wrap:wrap; margin-bottom:1.25rem;">
+      <div>
+        <p style="font-size:12px; color:#8b9cb6; margin:0 0 2px;">This week</p>
+        <p style="font-size:26px; font-weight:700; margin:0; color:#f9fafb;">{{ this_week_count }}</p>
+        <p style="font-size:11px; color:#8b9cb6; margin:0;">since {{ start_of_this_week }}</p>
       </div>
-      <div class="weekly-stat weekly-stat--muted">
-        <span class="weekly-stat__count">{{ last_week_count }}</span>
-        <span class="weekly-stat__label">Last week</span>
+      <div>
+        <p style="font-size:12px; color:#8b9cb6; margin:0 0 2px;">Last week</p>
+        <p style="font-size:26px; font-weight:700; margin:0; color:#f9fafb;">{{ last_week_count }}</p>
       </div>
-      <div class="weekly-stat">
+      <div>
+        <p style="font-size:12px; color:#8b9cb6; margin:0 0 2px;">Change</p>
         {% if week_change_pct is not None %}
           {% if week_change_pct > 0 %}
-            <span class="weekly-stat__count weekly-stat__count--up">+{{ week_change_pct }}%</span>
-            <span class="weekly-stat__label">vs last week ↑</span>
+            <p style="font-size:26px; font-weight:700; margin:0; color:#1D9E75;">+{{ week_change_pct }}%</p>
           {% elif week_change_pct < 0 %}
-            <span class="weekly-stat__count weekly-stat__count--down">{{ week_change_pct }}%</span>
-            <span class="weekly-stat__label">vs last week ↓</span>
+            <p style="font-size:26px; font-weight:700; margin:0; color:#D85A30;">{{ week_change_pct }}%</p>
           {% else %}
-            <span class="weekly-stat__count">0%</span>
-            <span class="weekly-stat__label">vs last week →</span>
+            <p style="font-size:26px; font-weight:700; margin:0; color:#f9fafb;">0%</p>
           {% endif %}
         {% else %}
-          <span class="weekly-stat__count">—</span>
-          <span class="weekly-stat__label">No data last week</span>
+          <p style="font-size:26px; font-weight:700; margin:0; color:#8b9cb6;">—</p>
+          <p style="font-size:11px; color:#8b9cb6; margin:0;">no data last week</p>
         {% endif %}
       </div>
     </div>
+
+    <!-- Canvas — Django data stored in data-* attributes, no {{ }} inside any script tag -->
+    <div style="position:relative; width:100%; height:200px;">
+      <canvas id="weeklyCheckinChart"
+              role="img"
+              aria-label="Bar chart of weekly check-ins over the past 8 weeks"
+              data-labels="{{ weekly_chart_labels|safe }}"
+              data-values="{{ weekly_chart_data|safe }}">
+        Weekly check-in counts for the past 8 weeks.
+      </canvas>
+    </div>
+
+    <!-- Legend -->
+    <div style="display:flex; gap:16px; margin-top:10px; font-size:12px; color:#8b9cb6;">
+      <span style="display:flex; align-items:center; gap:5px;">
+        <span style="width:10px; height:10px; border-radius:2px; background:#1D9E75; display:inline-block;"></span>
+        This week
+      </span>
+      <span style="display:flex; align-items:center; gap:5px;">
+        <span style="width:10px; height:10px; border-radius:2px; background:#534AB7; display:inline-block;"></span>
+        Previous weeks
+      </span>
+    </div>
+
   </div>
 </section>
 
@@ -118,4 +143,55 @@
   <div class="card empty-state"><p>No check-ins recorded today yet.</p></div>
   {% endif %}
 </section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+  var canvas = document.getElementById('weeklyCheckinChart');
+  var chartLabels = JSON.parse(canvas.getAttribute('data-labels'));
+  var chartData   = JSON.parse(canvas.getAttribute('data-values'));
+
+  var colors  = chartData.map(function(v, i) { return i === chartData.length - 1 ? '#1D9E75' : '#534AB7'; });
+  var borders = chartData.map(function(v, i) { return i === chartData.length - 1 ? '#0F6E56' : '#3C3489'; });
+
+  new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: chartLabels,
+      datasets: [{
+        label: 'Check-ins',
+        data: chartData,
+        backgroundColor: colors,
+        borderColor: borders,
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: function(items) { return 'Week of ' + items[0].label; },
+            label: function(item) { return ' ' + item.raw + ' check-in' + (item.raw !== 1 ? 's' : ''); }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: { color: '#8b9cb6', font: { size: 11 }, maxRotation: 35, autoSkip: false }
+        },
+        y: {
+          beginAtZero: true,
+          border: { display: false },
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          ticks: { color: '#8b9cb6', font: { size: 11 }, stepSize: 1, precision: 0 }
+        }
+      }
+    }
+  });
+</script>
 {% endblock %}
