@@ -89,7 +89,7 @@ def dashboard_view(request):
     if last_week_count > 0:
         week_change_pct = round((this_week_count - last_week_count) / last_week_count * 100)
     else:
-        week_change_pct = None
+        week_change_pct = None  # can't compute % when last week had 0
 
     # 8-week history for bar chart (oldest → newest)
     weekly_chart_labels = []
@@ -180,8 +180,10 @@ def checkin_view(request):
                     check_in_date=now.date(),
                     check_in_time=now.time(),
                 )
+                # Compute and store session end time (2 hours by default)
                 log.compute_session_end_time(duration_minutes=120)
                 log.save(update_fields=['session_end_time'])
+                # Recompute status after check-in
                 member.status = member.compute_status()
                 member.save(update_fields=['status'])
                 checkin_result = {
