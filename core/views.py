@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Q, Count
@@ -11,17 +11,13 @@ from .decorators import admin_required
 from members.models import Member, AttendanceLog, User
 
 
-# ─── Authentication ───────────────────────────────────────────────
-
 def login_view(request):
     if request.session.get('admin_id'):
         return redirect('core:dashboard')
-
     error = None
     if request.method == 'POST':
         email = request.POST.get('email', '').strip().lower()
         password = request.POST.get('password', '')
-
         try:
             user = User.objects.get(email=email, role='admin')
         except User.DoesNotExist:
@@ -39,7 +35,6 @@ def login_view(request):
                 ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
                 user.increment_failed(ip_address=ip.split(',')[0].strip())
                 error = 'Invalid email or password.'
-
     return render(request, 'core/login.html', {'error': error})
 
 
@@ -48,13 +43,10 @@ def logout_view(request):
     return redirect('core:login')
 
 
-# ─── Dashboard ────────────────────────────────────────────────────
-
 @admin_required
 def dashboard_view(request):
     today = timezone.localdate()
     active_members = Member.objects.filter(is_active=True)
-
     counts = {
         'active': active_members.filter(status='Active').count(),
         'inactive': active_members.filter(status='Inactive').count(),
@@ -62,7 +54,6 @@ def dashboard_view(request):
         'expired': active_members.filter(status='Expired').count(),
         'total': active_members.count(),
     }
-
     expiring_soon = active_members.filter(status='Expiring Soon').order_by('expiry_date')[:10]
     todays_checkins = (
         AttendanceLog.objects
@@ -70,28 +61,21 @@ def dashboard_view(request):
         .select_related('member')
         .order_by('-check_in_time')
     )
-
-    # Weekly check-in stats: this week (Mon–today) vs same 7-day window last week
-    start_of_this_week = today - datetime.timedelta(days=today.weekday())  # Monday
+    start_of_this_week = today - datetime.timedelta(days=today.weekday())
     start_of_last_week = start_of_this_week - datetime.timedelta(days=7)
     end_of_last_week   = start_of_this_week - datetime.timedelta(days=1)
-
     this_week_count = AttendanceLog.objects.filter(
         check_in_date__gte=start_of_this_week,
         check_in_date__lte=today,
     ).count()
-
     last_week_count = AttendanceLog.objects.filter(
         check_in_date__gte=start_of_last_week,
         check_in_date__lte=end_of_last_week,
     ).count()
-
     if last_week_count > 0:
         week_change_pct = round((this_week_count - last_week_count) / last_week_count * 100)
     else:
-        week_change_pct = None  # can't compute % when last week had 0
-
-    # 8-week history for bar chart (oldest → newest)
+        week_change_pct = None
     weekly_chart_labels = []
     weekly_chart_data = []
     for i in range(7, -1, -1):
@@ -103,7 +87,6 @@ def dashboard_view(request):
         ).count()
         weekly_chart_labels.append(ws.strftime('%b %d'))
         weekly_chart_data.append(count)
-
     return render(request, 'core/dashboard.html', {
         'counts': counts,
         'expiring_soon': expiring_soon,
@@ -120,7 +103,6 @@ def dashboard_view(request):
 
 @admin_required
 def refresh_all_statuses(request):
-    """Recompute and persist status for every active member."""
     if request.method == 'POST':
         members = Member.objects.filter(is_active=True)
         updated = 0
@@ -134,36 +116,27 @@ def refresh_all_statuses(request):
     return redirect('core:dashboard')
 
 
-# ─── Check-In ─────────────────────────────────────────────────────
-
 @admin_required
 def checkin_view(request):
     search_results = []
     checkin_result = None
     error = None
     query = request.GET.get('q', '').strip()
-
     if query:
         search_results = Member.objects.filter(
             is_active=True,
             name__icontains=query
         ).select_related('plan')[:20]
-
     if request.method == 'POST':
         member_id = request.POST.get('member_id')
         member = get_object_or_404(Member, pk=member_id, is_active=True)
-
-        # Block expired members
         if member.status == 'Expired':
             error = f"Membership expired on {member.expiry_date}. Check-in not allowed."
         else:
             now = timezone.localtime()
-
-            # Duplicate check within 30 minutes — works across midnight
             recent = AttendanceLog.objects.filter(
                 member=member
             ).order_by('-check_in_date', '-check_in_time').first()
-
             if recent:
                 last_dt = timezone.make_aware(
                     datetime.datetime.combine(recent.check_in_date, recent.check_in_time)
@@ -173,24 +146,17 @@ def checkin_view(request):
                         f"Already checked in at {recent.check_in_time.strftime('%I:%M %p')} "
                         f"— less than 30 minutes ago."
                     )
-
             if not error:
                 log = AttendanceLog.objects.create(
                     member=member,
                     check_in_date=now.date(),
                     check_in_time=now.time(),
                 )
-                # Compute and store session end time (2 hours by default)
                 log.compute_session_end_time(duration_minutes=120)
                 log.save(update_fields=['session_end_time'])
-                # Recompute status after check-in
                 member.status = member.compute_status()
                 member.save(update_fields=['status'])
-                checkin_result = {
-                    'member': member,
-                    'log': log,
-                }
-
+                checkin_result = {'member': member, 'log': log}
     return render(request, 'core/checkin.html', {
         'search_results': search_results,
         'query': query,
@@ -199,11 +165,8 @@ def checkin_view(request):
     })
 
 
-# ─── Member Timeout ───────────────────────────────────────────────
-
 @admin_required
 def timeout_member(request, log_id):
-    """End a member's session immediately."""
     log = get_object_or_404(AttendanceLog, pk=log_id)
     now = timezone.localtime()
     log.session_end_time = now.time()
@@ -211,8 +174,6 @@ def timeout_member(request, log_id):
     messages.success(request, f"Session ended for {log.member.name}.")
     return redirect('core:dashboard')
 
-
-# ─── Announcements ────────────────────────────────────────────────
 
 @admin_required
 def announcement_list(request):
