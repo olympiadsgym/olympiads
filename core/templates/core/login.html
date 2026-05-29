@@ -12,26 +12,48 @@
   <style>
     .login-body {
       position: relative;
-      background-image: url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1920&q=80');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
     }
-    .login-bg-overlay {
+    .login-bg {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.58);
-      backdrop-filter: blur(2px);
       z-index: 0;
+    }
+    .login-bg img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      opacity: 0;
+      transition: opacity 1.4s ease-in-out;
+      will-change: opacity;
+    }
+    .login-bg img.active {
+      opacity: 1;
+    }
+    .login-bg-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.52);
+      backdrop-filter: blur(1.5px);
+      z-index: 1;
     }
     .login-container {
       position: relative;
-      z-index: 1;
+      z-index: 2;
     }
   </style>
 </head>
 <body class="login-body">
-  <div class="login-bg-overlay" aria-hidden="true"></div>
+  <div class="login-bg" aria-hidden="true">
+    <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1920&q=100&fit=crop" alt="" class="active">
+    <img src="https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1920&q=100&fit=crop" alt="">
+    <img src="https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=1920&q=100&fit=crop" alt="">
+    <img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1920&q=100&fit=crop" alt="">
+    <img src="https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=1920&q=100&fit=crop" alt="">
+    <div class="login-bg-overlay"></div>
+  </div>
   <main class="login-container" aria-labelledby="admin-title">
     <section class="login-card">
       <div class="login-logo">
@@ -80,5 +102,16 @@
     </section>
   </main>
   <script src="{% static 'js/main.js' %}"></script>
+  <script>
+    (function () {
+      var imgs = document.querySelectorAll('.login-bg img');
+      var current = 0;
+      setInterval(function () {
+        imgs[current].classList.remove('active');
+        current = (current + 1) % imgs.length;
+        imgs[current].classList.add('active');
+      }, 5000);
+    })();
+  </script>
 </body>
 </html>
