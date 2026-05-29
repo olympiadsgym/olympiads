@@ -9,8 +9,29 @@
   {% load static %}
   <link rel="stylesheet" href="{% static 'css/main.css' %}">
   <script>(function(){var t=localStorage.getItem('olympiads_theme')||'';document.documentElement.setAttribute('data-theme',t);})();</script>
+  <style>
+    .login-body {
+      position: relative;
+      background-image: url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1920&q=80');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    .login-bg-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.58);
+      backdrop-filter: blur(2px);
+      z-index: 0;
+    }
+    .login-container {
+      position: relative;
+      z-index: 1;
+    }
+  </style>
 </head>
 <body class="login-body">
+  <div class="login-bg-overlay" aria-hidden="true"></div>
   <main class="login-container" aria-labelledby="portal-title">
     <section class="login-card">
       <div class="login-logo">
