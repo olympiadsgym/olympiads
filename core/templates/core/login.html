@@ -10,18 +10,22 @@
   <link rel="stylesheet" href="{% static 'css/main.css' %}">
   <script>(function(){var t=localStorage.getItem('olympiads_theme')||'';document.documentElement.setAttribute('data-theme',t);})();</script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html, body { height: 100%; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
 
     .login-body {
-      min-height: 100vh;
+      height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 16px;
       position: relative;
       font-family: 'Poppins', sans-serif;
+      overflow: hidden;
     }
 
     .login-bg {
@@ -49,7 +53,7 @@
     .login-bg-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0, 0, 0, 0.55);
+      background: rgba(0, 0, 0, 0.52);
       z-index: 1;
     }
 
@@ -61,7 +65,7 @@
     }
 
     .login-card {
-      background: rgba(10, 20, 40, 0.60) !important;
+      background: rgba(10, 20, 40, 0.35) !important;
       backdrop-filter: blur(20px) saturate(160%) !important;
       -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
       border: 1px solid rgba(255, 255, 255, 0.15) !important;
