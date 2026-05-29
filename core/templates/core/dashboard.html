@@ -65,13 +65,12 @@
       </div>
     </div>
 
-    <!-- Canvas: data stored as attributes, chart rendered on window load -->
+    <!-- Chart rendered via hidden script tags to avoid JSON/attribute quoting issues -->
     <div style="position:relative; width:100%; height:220px;">
-      <canvas id="weeklyCheckinChart"
-              data-labels="{{ weekly_chart_labels|safe }}"
-              data-values="{{ weekly_chart_data|safe }}">
-      </canvas>
+      <canvas id="weeklyCheckinChart"></canvas>
     </div>
+    <script id="chart-labels" type="application/json">{{ weekly_chart_labels }}</script>
+    <script id="chart-values" type="application/json">{{ weekly_chart_data }}</script>
 
     <!-- Legend -->
     <div style="display:flex; gap:16px; margin-top:10px; font-size:12px; color:#8b9cb6;">
@@ -145,10 +144,8 @@
 <script>
   window.addEventListener('load', function() {
     var canvas = document.getElementById('weeklyCheckinChart');
-    if (!canvas) return;
-
-    var chartLabels = JSON.parse(canvas.getAttribute('data-labels') || '[]');
-    var chartData   = JSON.parse(canvas.getAttribute('data-values') || '[]');
+    var chartLabels = JSON.parse(document.getElementById('chart-labels').textContent);
+    var chartData   = JSON.parse(document.getElementById('chart-values').textContent);
 
     var colors  = chartData.map(function(v, i) { return i === chartData.length - 1 ? '#1D9E75' : '#534AB7'; });
     var borders = chartData.map(function(v, i) { return i === chartData.length - 1 ? '#0F6E56' : '#3C3489'; });
