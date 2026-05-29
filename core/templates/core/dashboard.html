@@ -65,14 +65,11 @@
       </div>
     </div>
 
-    <!-- Canvas: Django data stored in data attributes on the element -->
-    <div style="position:relative; width:100%; height:200px;">
+    <!-- Canvas: data stored as attributes, chart rendered on window load -->
+    <div style="position:relative; width:100%; height:220px;">
       <canvas id="weeklyCheckinChart"
-              role="img"
-              aria-label="Bar chart of weekly check-ins over the past 8 weeks"
               data-labels="{{ weekly_chart_labels|safe }}"
               data-values="{{ weekly_chart_data|safe }}">
-        Weekly check-in counts for the past 8 weeks.
       </canvas>
     </div>
 
@@ -119,7 +116,7 @@
     <h3 class="section-title">Today's Check-ins ({{ todays_checkins.count }})</h3>
     <form method="post" action="{% url 'core:refresh_all_statuses' %}" style="display:inline;">
       {% csrf_token %}
-      <button type="submit" class="btn btn--ghost btn--sm">↻ Refresh Statuses</button>
+      <button type="submit" class="btn btn--ghost btn--sm">&#8635; Refresh Statuses</button>
     </form>
   </div>
   {% if todays_checkins %}
@@ -146,52 +143,56 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
-  var canvas = document.getElementById('weeklyCheckinChart');
-  var chartLabels = JSON.parse(canvas.getAttribute('data-labels'));
-  var chartData   = JSON.parse(canvas.getAttribute('data-values'));
+  window.addEventListener('load', function() {
+    var canvas = document.getElementById('weeklyCheckinChart');
+    if (!canvas) return;
 
-  var colors  = chartData.map(function(v, i) { return i === chartData.length - 1 ? '#1D9E75' : '#534AB7'; });
-  var borders = chartData.map(function(v, i) { return i === chartData.length - 1 ? '#0F6E56' : '#3C3489'; });
+    var chartLabels = JSON.parse(canvas.getAttribute('data-labels') || '[]');
+    var chartData   = JSON.parse(canvas.getAttribute('data-values') || '[]');
 
-  new Chart(canvas, {
-    type: 'bar',
-    data: {
-      labels: chartLabels,
-      datasets: [{
-        label: 'Check-ins',
-        data: chartData,
-        backgroundColor: colors,
-        borderColor: borders,
-        borderWidth: 1,
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            title: function(items) { return 'Week of ' + items[0].label; },
-            label: function(item) { return ' ' + item.raw + ' check-in' + (item.raw !== 1 ? 's' : ''); }
+    var colors  = chartData.map(function(v, i) { return i === chartData.length - 1 ? '#1D9E75' : '#534AB7'; });
+    var borders = chartData.map(function(v, i) { return i === chartData.length - 1 ? '#0F6E56' : '#3C3489'; });
+
+    new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: chartLabels,
+        datasets: [{
+          label: 'Check-ins',
+          data: chartData,
+          backgroundColor: colors,
+          borderColor: borders,
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: function(items) { return 'Week of ' + items[0].label; },
+              label: function(item) { return ' ' + item.raw + ' check-in' + (item.raw !== 1 ? 's' : ''); }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            border: { display: false },
+            ticks: { color: '#8b9cb6', font: { size: 11 }, maxRotation: 35, autoSkip: false }
+          },
+          y: {
+            beginAtZero: true,
+            border: { display: false },
+            grid: { color: 'rgba(255,255,255,0.06)' },
+            ticks: { color: '#8b9cb6', font: { size: 11 }, stepSize: 1, precision: 0 }
           }
         }
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          border: { display: false },
-          ticks: { color: '#8b9cb6', font: { size: 11 }, maxRotation: 35, autoSkip: false }
-        },
-        y: {
-          beginAtZero: true,
-          border: { display: false },
-          grid: { color: 'rgba(255,255,255,0.06)' },
-          ticks: { color: '#8b9cb6', font: { size: 11 }, stepSize: 1, precision: 0 }
-        }
       }
-    }
+    });
   });
 </script>
 {% endblock %}
