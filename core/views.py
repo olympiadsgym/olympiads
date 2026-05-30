@@ -118,15 +118,19 @@ def refresh_all_statuses(request):
 
 @admin_required
 def checkin_view(request):
-    search_results = []
     checkin_result = None
     error = None
     query = request.GET.get('q', '').strip()
+
+    # Always load all active members; filter by name if query provided
+    all_members = Member.objects.filter(
+        is_active=True
+    ).select_related('plan').order_by('name')
+
     if query:
-        search_results = Member.objects.filter(
-            is_active=True,
-            name__icontains=query
-        ).select_related('plan')[:20]
+        search_results = all_members.filter(name__icontains=query)
+    else:
+        search_results = all_members
     if request.method == 'POST':
         member_id = request.POST.get('member_id')
         member = get_object_or_404(Member, pk=member_id, is_active=True)

@@ -8,14 +8,18 @@
   <h2 class="page-title">Member Check-In</h2>
 </div>
 
+<!-- Search -->
 <form method="get" class="search-form" role="search">
-  <input type="search" name="q" value="{{ query }}" class="search-input" placeholder="Search member by name..." aria-label="Search member by name" autofocus>
+  <input type="search" name="q" id="memberSearch" value="{{ query }}" class="search-input"
+         placeholder="Search member by name..." aria-label="Search member by name" autofocus autocomplete="off">
   <button type="submit" class="btn btn--primary">Search</button>
 </form>
 
 {% if checkin_result %}
   <div class="alert alert--success" role="alert">
-    Check-in recorded for <strong>{{ checkin_result.member.name }}</strong> at {{ checkin_result.log.check_in_time|time:"g:i A" }}. Session expires at {{ checkin_result.log.session_end_time|time:"g:i A" }}.
+    Check-in recorded for <strong>{{ checkin_result.member.name }}</strong>
+    at {{ checkin_result.log.check_in_time|time:"g:i A" }}.
+    Session expires at {{ checkin_result.log.session_end_time|time:"g:i A" }}.
   </div>
 {% endif %}
 
@@ -23,11 +27,17 @@
   <div class="flash flash--error alert alert--danger" role="alert">{{ error }}</div>
 {% endif %}
 
-{% if search_results %}
-  <div class="section">
-    <h3 class="section-title">Results for "{{ query }}"</h3>
+<!-- Member list -->
+<div class="section">
+  {% if query %}
+    <h3 class="section-title">Results for "{{ query }}" ({{ search_results|length }})</h3>
+  {% else %}
+    <h3 class="section-title">All Active Members ({{ search_results|length }})</h3>
+  {% endif %}
+
+  <div id="memberList">
     {% for member in search_results %}
-    <div class="member-card">
+    <div class="member-card" data-name="{{ member.name|lower }}">
       <div class="member-card__info">
         <div class="member-card__name">
           {% if member.status == 'Active' %}
@@ -36,7 +46,7 @@
           {{ member.name }}
         </div>
         <div class="member-card__meta">
-          {{ member.plan.plan_name }} - Expires {{ member.expiry_date }} - Last visit: {{ member.last_checkin|default:"Never" }}
+          {{ member.plan.plan_name }} &mdash; Expires {{ member.expiry_date }} &mdash; Last visit: {{ member.last_checkin|default:"Never" }}
         </div>
       </div>
       <div class="member-card__right">
@@ -46,15 +56,42 @@
         <form method="post" style="margin-top:8px;">
           {% csrf_token %}
           <input type="hidden" name="member_id" value="{{ member.pk }}">
-          <button type="submit" class="btn btn--primary btn--sm" {% if member.status == 'Expired' %}disabled aria-disabled="true"{% endif %}>
+          <button type="submit" class="btn btn--primary btn--sm"
+                  {% if member.status == 'Expired' %}disabled aria-disabled="true"{% endif %}>
             Check-In
           </button>
         </form>
       </div>
     </div>
+    {% empty %}
+      <div class="card empty-state"><p>No active members found{% if query %} matching "{{ query }}"{% endif %}.</p></div>
     {% endfor %}
   </div>
-{% elif query %}
-  <div class="card empty-state"><p>No active members found matching "{{ query }}".</p></div>
-{% endif %}
+
+  <p id="noResults" style="display:none;" class="card empty-state">No members match your search.</p>
+</div>
+
+<!-- Live search filter (client-side, instant) -->
+<script>
+  (function () {
+    var input = document.getElementById('memberSearch');
+    var cards = document.querySelectorAll('#memberList .member-card');
+    var noResults = document.getElementById('noResults');
+
+    input.addEventListener('input', function () {
+      var q = this.value.toLowerCase().trim();
+      var visible = 0;
+      cards.forEach(function (card) {
+        var name = card.getAttribute('data-name') || '';
+        if (!q || name.includes(q)) {
+          card.style.display = '';
+          visible++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+      noResults.style.display = (visible === 0 && q) ? '' : 'none';
+    });
+  })();
+</script>
 {% endblock %}
