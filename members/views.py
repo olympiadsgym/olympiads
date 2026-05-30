@@ -395,6 +395,127 @@ def edit_member(request, pk):
     })
 
 
+def _build_renewal_html(member):
+    """Beautiful HTML renewal confirmation email matching OLYMPIADS UI."""
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OLYMPIADS</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+    * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+    body {{ background-color: #F1F5F9; font-family: 'Poppins', Arial, sans-serif; color: #0F172A; }}
+  </style>
+</head>
+<body style="background:#F1F5F9; margin:0; padding:0;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F1F5F9; padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
+
+          <!-- HEADER -->
+          <tr>
+            <td style="background:#0F172A; border-radius:14px 14px 0 0; padding:28px 36px 24px; text-align:center;">
+              <div style="display:inline-block; background:#F59E0B; border-radius:10px; width:44px; height:44px; line-height:44px; text-align:center; font-size:22px; font-weight:800; color:#0F172A; margin-bottom:10px;">O</div>
+              <br>
+              <span style="font-family:'Poppins',Arial,sans-serif; font-size:22px; font-weight:800; color:#FFFFFF; letter-spacing:2px;">OLYMPIADS</span>
+              <br>
+              <span style="font-family:'Poppins',Arial,sans-serif; font-size:11px; font-weight:500; color:#94A3B8; letter-spacing:3px; text-transform:uppercase;">Fitness &amp; Wellness</span>
+            </td>
+          </tr>
+
+          <!-- BODY -->
+          <tr>
+            <td style="background:#FFFFFF; padding:36px 36px 28px; border-left:1px solid #E2E8F0; border-right:1px solid #E2E8F0;">
+
+              <!-- Success badge -->
+              <p style="text-align:center; margin-bottom:24px;">
+                <span style="display:inline-block; background:#DCFCE7; color:#166534; font-family:'Poppins',Arial,sans-serif; font-size:12px; font-weight:600; padding:6px 16px; border-radius:999px; border:1px solid #BBF7D0; letter-spacing:0.5px; text-transform:uppercase;">
+                  ✓ Membership Renewed
+                </span>
+              </p>
+
+              <h1 style="font-family:'Poppins',Arial,sans-serif; font-size:22px; font-weight:700; color:#0F172A; text-align:center; margin-bottom:8px; line-height:1.3;">
+                You're all set, {member.name}!
+              </h1>
+              <p style="font-family:'Poppins',Arial,sans-serif; font-size:14px; color:#64748B; text-align:center; margin-bottom:28px; line-height:1.6;">
+                Your OLYMPIADS membership has been successfully renewed. Keep up the great work!
+              </p>
+
+              <!-- Big checkmark -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
+                <tr>
+                  <td align="center">
+                    <div style="display:inline-block; background:#0F172A; border-radius:50%; width:64px; height:64px; line-height:64px; text-align:center; font-size:30px;">
+                      ✓
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Membership details card -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                     style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; margin-bottom:24px; overflow:hidden;">
+                <tr>
+                  <td>
+                    <div style="background:#0F172A; padding:10px 20px; border-radius:10px 10px 0 0;">
+                      <span style="font-family:'Poppins',Arial,sans-serif; font-size:12px; font-weight:600; color:#F59E0B; text-transform:uppercase; letter-spacing:1px;">Renewed Membership Details</span>
+                    </div>
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td width="50%" style="padding:14px 20px; border-bottom:1px solid #E2E8F0; border-right:1px solid #E2E8F0;">
+                          <span style="font-family:'Poppins',Arial,sans-serif; font-size:11px; color:#94A3B8; display:block; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.5px;">Plan</span>
+                          <span style="font-family:'Poppins',Arial,sans-serif; font-size:14px; font-weight:600; color:#0F172A;">{member.plan.plan_name}</span>
+                        </td>
+                        <td width="50%" style="padding:14px 20px; border-bottom:1px solid #E2E8F0;">
+                          <span style="font-family:'Poppins',Arial,sans-serif; font-size:11px; color:#94A3B8; display:block; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.5px;">Status</span>
+                          <span style="font-family:'Poppins',Arial,sans-serif; font-size:14px; font-weight:600; color:#22C55E;">Active</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td width="50%" style="padding:14px 20px; border-right:1px solid #E2E8F0;">
+                          <span style="font-family:'Poppins',Arial,sans-serif; font-size:11px; color:#94A3B8; display:block; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.5px;">Start Date</span>
+                          <span style="font-family:'Poppins',Arial,sans-serif; font-size:14px; font-weight:500; color:#1E293B;">{member.start_date}</span>
+                        </td>
+                        <td width="50%" style="padding:14px 20px;">
+                          <span style="font-family:'Poppins',Arial,sans-serif; font-size:11px; color:#94A3B8; display:block; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.5px;">New Expiry Date</span>
+                          <span style="font-family:'Poppins',Arial,sans-serif; font-size:14px; font-weight:600; color:#22C55E;">{member.expiry_date}</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="font-family:'Poppins',Arial,sans-serif; font-size:13px; color:#94A3B8; text-align:center; line-height:1.6;">
+                Thank you for being part of the OLYMPIADS family. See you at the gym! 💪
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- FOOTER -->
+          <tr>
+            <td style="background:#F8FAFC; border:1px solid #E2E8F0; border-top:none; border-radius:0 0 14px 14px; padding:20px 36px; text-align:center;">
+              <p style="font-family:'Poppins',Arial,sans-serif; font-size:12px; color:#94A3B8; margin-bottom:4px;">
+                This is an automated message from OLYMPIADS Gym Management System.
+              </p>
+              <p style="font-family:'Poppins',Arial,sans-serif; font-size:12px; color:#CBD5E1;">
+                Please do not reply to this email.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+
+
 @admin_required
 def renew_member(request, pk):
     """Renew a member's plan from today, extending by the plan's duration."""
@@ -406,6 +527,30 @@ def renew_member(request, pk):
         member.status = member.compute_status()
         member.save()
         messages.success(request, f"{member.name}'s membership renewed until {member.expiry_date}.")
+
+        # Send renewal confirmation email to member
+        try:
+            plain = (
+                f"Hi {member.name},\n\n"
+                f"Your OLYMPIADS membership has been successfully renewed.\n\n"
+                f"Plan: {member.plan.plan_name}\n"
+                f"Start Date: {member.start_date}\n"
+                f"New Expiry Date: {member.expiry_date}\n\n"
+                f"Thank you for being part of the OLYMPIADS family!\n\n"
+                f"— OLYMPIADS Gym Team"
+            )
+            msg = EmailMultiAlternatives(
+                subject="[OLYMPIADS] Membership Successfully Renewed",
+                body=plain,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[member.email],
+            )
+            msg.attach_alternative(_build_renewal_html(member), "text/html")
+            msg.send(fail_silently=False)
+            logger.info(f"Renewal email sent to {member.email}")
+        except Exception as e:
+            logger.error(f"Failed to send renewal email to {member.email}: {e}")
+
     return redirect('members:edit_member', pk=pk)
 
 
@@ -530,4 +675,4 @@ def change_password(request):
     return render(request, 'members/change_password.html', {
         'error': error,
         'success': success,
-    })  
+    })
