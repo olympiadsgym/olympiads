@@ -4,35 +4,14 @@
 {% block menu_checkin %}menu-item--active{% endblock %}
 
 {% block content %}
-<style>
-  .icon-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    transition: background 0.15s, transform 0.1s;
-    padding: 0;
-  }
-  .icon-btn:active { transform: scale(0.93); }
-  .icon-btn--checkin {
-    background: rgba(37, 99, 235, 0.12);
-    color: #2563eb;
-  }
-  .icon-btn--checkin:hover { background: rgba(37, 99, 235, 0.22); }
-  .icon-btn svg { width: 18px; height: 18px; }
-</style>
 <div class="page-header">
   <h2 class="page-title">Member Check-In</h2>
 </div>
 
 <!-- Search -->
-<form method="get" class="filter-row" id="filterForm" role="search">
+<form method="get" class="search-form" role="search">
   <input type="search" name="q" id="memberSearch" value="{{ query }}" class="search-input"
-         placeholder="Search by name..." aria-label="Search member by name" autofocus autocomplete="off">
+         placeholder="Search member by name..." aria-label="Search member by name" autofocus autocomplete="off">
 </form>
 
 {% if checkin_result %}
@@ -76,14 +55,9 @@
         <form method="post" style="margin-top:8px;">
           {% csrf_token %}
           <input type="hidden" name="member_id" value="{{ member.pk }}">
-          <button type="submit" class="icon-btn icon-btn--checkin"
-                  title="Check-In {{ member.name }}"
-                  {% if member.status == 'Expired' %}disabled aria-disabled="true" style="opacity:0.4; cursor:not-allowed;"{% endif %}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-              <polyline points="10 17 15 12 10 7"/>
-              <line x1="15" y1="12" x2="3" y2="12"/>
-            </svg>
+          <button type="submit" class="btn btn--primary btn--sm"
+                  {% if member.status == 'Expired' %}disabled aria-disabled="true"{% endif %}>
+            Check-In
           </button>
         </form>
       </div>
