@@ -9,10 +9,17 @@
   <h2 class="page-title">Edit Member</h2>
 </div>
 
+{% if messages %}
+  {% for message in messages %}
+    <div class="flash flash--{{ message.tags }} alert alert--success" role="alert">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
 {% if error %}
   <div class="flash flash--error alert alert--danger" role="alert">{{ error }}</div>
 {% endif %}
 
+<!-- EDIT FORM -->
 <div class="card form-card">
   <form method="post" novalidate>
     {% csrf_token %}
@@ -53,25 +60,28 @@
       <span class="badge badge--{{ member.status|lower|cut:' ' }}">{{ member.status }}</span>
     </div>
 
-    <div class="form-group" style="border-top:1px solid var(--border);padding-top:18px;margin-top:8px;">
-      <span class="form-label">Renew Membership</span>
-      <p class="form-hint" style="margin-bottom:12px;">
-        Extends membership from today using the currently selected plan and duration.
-      </p>
-      <form method="post" action="{% url 'members:renew_member' member.pk %}" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit" class="btn btn--secondary"
-                onclick="return confirm('Renew {{ member.name }}\'s membership from today?')">
-          🔄 Renew Membership
-        </button>
-      </form>
-    </div>
-
     <div class="form-actions">
       <button type="submit" class="btn btn--primary">Save Changes</button>
       <a href="{% url 'members:member_list' %}" class="btn btn--ghost">Cancel</a>
     </div>
   </form>
   <p class="form-hint" style="margin-top:12px;">Last updated: {{ member.updated_at|date:"N j, Y g:i A" }}</p>
+</div>
+
+<!-- RENEW MEMBERSHIP — separate form, outside the edit form -->
+<div class="card form-card" style="margin-top:16px;">
+  <div class="form-group" style="margin-bottom:0;">
+    <span class="form-label">Renew Membership</span>
+    <p class="form-hint" style="margin-bottom:12px;">
+      Extends membership from today using the currently selected plan and duration. A confirmation email will be sent to {{ member.email }}.
+    </p>
+    <form method="post" action="{% url 'members:renew_member' member.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn--secondary"
+              onclick="return confirm('Renew {{ member.name }}\'s membership from today? A confirmation email will be sent to {{ member.email }}.')">
+        🔄 Renew Membership
+      </button>
+    </form>
+  </div>
 </div>
 {% endblock %}
