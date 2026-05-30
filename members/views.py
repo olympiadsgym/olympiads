@@ -459,7 +459,16 @@ def portal_logout(request):
 @member_required
 def portal_dashboard(request):
     user = get_object_or_404(User, pk=request.session['member_user_id'])
-    member = get_object_or_404(Member, user=user, is_active=True)
+    try:
+        member = Member.objects.get(user=user)
+    except Member.DoesNotExist:
+        request.session.flush()
+        return redirect('members:portal_login')
+    if not member.is_active:
+        request.session.flush()
+        return render(request, 'members/portal_login.html', {
+            'error': 'Your account has been deactivated. Please contact the gym.'
+        })
 
     member.status = member.compute_status()
     member.save(update_fields=['status'])
