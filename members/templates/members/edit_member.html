@@ -9,12 +9,6 @@
   <h2 class="page-title">Edit Member</h2>
 </div>
 
-{% if messages %}
-  {% for message in messages %}
-    <div class="flash flash--{{ message.tags }} alert alert--success" role="alert">{{ message }}</div>
-  {% endfor %}
-{% endif %}
-
 {% if error %}
   <div class="flash flash--error alert alert--danger" role="alert">{{ error }}</div>
 {% endif %}
@@ -68,20 +62,41 @@
   <p class="form-hint" style="margin-top:12px;">Last updated: {{ member.updated_at|date:"N j, Y g:i A" }}</p>
 </div>
 
-<!-- RENEW MEMBERSHIP — separate form, outside the edit form -->
+<!-- RENEW MEMBERSHIP — separate form, completely outside the edit form -->
 <div class="card form-card" style="margin-top:16px;">
   <div class="form-group" style="margin-bottom:0;">
     <span class="form-label">Renew Membership</span>
     <p class="form-hint" style="margin-bottom:12px;">
-      Extends membership from today using the currently selected plan and duration. A confirmation email will be sent to {{ member.email }}.
+      {% if can_renew %}
+        Extends membership from today using the current plan and duration.
+        A confirmation email will be sent to {{ member.email }}.
+      {% else %}
+        Membership was already renewed today ({{ member.start_date }}). Renewal is only allowed when the membership is <strong>Expiring Soon</strong> or <strong>Expired</strong>.
+      {% endif %}
     </p>
     <form method="post" action="{% url 'members:renew_member' member.pk %}">
       {% csrf_token %}
-      <button type="submit" class="btn btn--secondary"
-              onclick="return confirm('Renew {{ member.name }}\'s membership from today? A confirmation email will be sent to {{ member.email }}.')">
-        🔄 Renew Membership
-      </button>
+      {% if can_renew %}
+        <button type="submit" class="btn btn--secondary" id="renewBtn">
+          🔄 Renew Membership
+        </button>
+      {% else %}
+        <button type="button" class="btn btn--secondary" disabled style="opacity:0.5; cursor:not-allowed;">
+          🔄 Renew Membership
+        </button>
+      {% endif %}
     </form>
   </div>
 </div>
+
+{% if can_renew %}
+<script>
+  document.getElementById('renewBtn').addEventListener('click', function(e) {
+    if (!confirm('Renew {{ member.name|escapejs }}\'s membership from today?\nA confirmation email will be sent to {{ member.email|escapejs }}.')) {
+      e.preventDefault();
+    }
+  });
+</script>
+{% endif %}
+
 {% endblock %}

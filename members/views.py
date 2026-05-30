@@ -388,10 +388,14 @@ def edit_member(request, pk):
             except ValueError:
                 error = 'Invalid date format.'
 
+    today = timezone.localdate()
+    can_renew = member.status in ('Expiring Soon', 'Expired') or member.start_date != today
+
     return render(request, 'members/edit_member.html', {
         'member': member,
         'plans': plans,
         'error': error,
+        'can_renew': can_renew,
     })
 
 
@@ -522,6 +526,12 @@ def renew_member(request, pk):
     if request.method == 'POST':
         member = get_object_or_404(Member, pk=pk, is_active=True)
         today = timezone.localdate()
+
+        # Block renewal if already renewed today AND membership is not expiring/expired
+        if member.start_date == today and member.status not in ('Expiring Soon', 'Expired'):
+            messages.error(request, f"Cannot renew: {member.name}'s membership was already renewed today.")
+            return redirect('members:edit_member', pk=pk)
+
         member.start_date = today
         member.expiry_date = today + timezone.timedelta(days=member.plan.duration_days)
         member.status = member.compute_status()
