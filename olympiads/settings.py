@@ -113,3 +113,14 @@ CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 X_FRAME_OPTIONS = 'DENY'
 SECURE_CONTENT_TYPE_NOSNIFF = True
+# Cookie / CSRF fixes for Vercel deployment
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.vercel.app',
+    'https://olympiads-beta.vercel.app',
+]
+
+# Vercel serverless: use signed-cookie session backend so session data
+# travels with the cookie itself — no DB round-trip needed between
+# the login POST and the dashboard GET on different lambda instances.
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'

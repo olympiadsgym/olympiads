@@ -1,3 +1,4 @@
+import time
 import csv
 import re
 import logging
@@ -442,6 +443,7 @@ def portal_login(request):
                 user.reset_failed()
                 request.session['member_user_id'] = user.pk
                 request.session['session_start_date'] = str(timezone.localdate())
+                request.session['last_activity'] = time.time()
                 return redirect('members:portal_dashboard')
             else:
                 ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
@@ -528,4 +530,4 @@ def change_password(request):
     return render(request, 'members/change_password.html', {
         'error': error,
         'success': success,
-    })
+    })  
