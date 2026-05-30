@@ -548,8 +548,10 @@ def renew_member(request, pk):
             msg.attach_alternative(_build_renewal_html(member), "text/html")
             msg.send(fail_silently=False)
             logger.info(f"Renewal email sent to {member.email}")
+            print(f"[RENEWAL EMAIL] SUCCESS — sent to {member.email}")
         except Exception as e:
             logger.error(f"Failed to send renewal email to {member.email}: {e}")
+            print(f"[RENEWAL EMAIL] FAILED — {type(e).__name__}: {e}")
 
     return redirect('members:edit_member', pk=pk)
 
