@@ -123,7 +123,10 @@
       margin-bottom: 6px;
     }
 
-    .form-input {
+    .form-input,
+    .login-card input[type="email"],
+    .login-card input[type="password"],
+    .login-card input[type="text"] {
       width: 100%;
       padding: 10px 14px;
       background: rgba(255, 255, 255, 0.12) !important;
@@ -138,12 +141,14 @@
       caret-color: #ffffff !important;
     }
 
-    .form-input::placeholder {
+    .form-input::placeholder,
+    .login-card input::placeholder {
       color: rgba(255, 255, 255, 0.45) !important;
       -webkit-text-fill-color: rgba(255, 255, 255, 0.45) !important;
     }
 
-    .form-input:focus {
+    .form-input:focus,
+    .login-card input:focus {
       background: rgba(255, 255, 255, 0.18) !important;
       border-color: rgba(255, 255, 255, 0.45) !important;
       color: #ffffff !important;
@@ -152,9 +157,12 @@
 
     .form-input:-webkit-autofill,
     .form-input:-webkit-autofill:hover,
-    .form-input:-webkit-autofill:focus {
+    .form-input:-webkit-autofill:focus,
+    .login-card input:-webkit-autofill,
+    .login-card input:-webkit-autofill:hover,
+    .login-card input:-webkit-autofill:focus {
       -webkit-text-fill-color: #ffffff !important;
-      -webkit-box-shadow: 0 0 0px 1000px rgba(10, 20, 60, 0.6) inset !important;
+      -webkit-box-shadow: 0 0 0px 1000px rgba(10, 20, 60, 0.85) inset !important;
       caret-color: #ffffff !important;
       transition: background-color 5000s ease-in-out 0s;
     }
