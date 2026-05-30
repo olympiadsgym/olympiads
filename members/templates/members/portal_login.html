@@ -119,7 +119,10 @@
       margin-bottom: 6px;
     }
 
-    .form-input {
+    .form-input,
+    .login-card input[type="email"],
+    .login-card input[type="password"],
+    .login-card input[type="text"] {
       width: 100%;
       padding: 10px 14px;
       background: rgba(255, 255, 255, 0.10) !important;
@@ -130,13 +133,25 @@
       font-family: 'Poppins', sans-serif;
       outline: none;
       transition: border-color 0.2s, background 0.2s;
+      -webkit-text-fill-color: #ffffff !important;
     }
 
-    .form-input::placeholder {
+    .login-card input:-webkit-autofill,
+    .login-card input:-webkit-autofill:hover,
+    .login-card input:-webkit-autofill:focus {
+      -webkit-box-shadow: 0 0 0px 1000px rgba(10, 30, 60, 0.85) inset !important;
+      -webkit-text-fill-color: #ffffff !important;
+      border: 1px solid rgba(255, 255, 255, 0.22) !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+
+    .form-input::placeholder,
+    .login-card input::placeholder {
       color: rgba(255,255,255,0.40) !important;
     }
 
-    .form-input:focus {
+    .form-input:focus,
+    .login-card input:focus {
       background: rgba(255, 255, 255, 0.18) !important;
       border-color: rgba(255, 255, 255, 0.45) !important;
     }
