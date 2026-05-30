@@ -4,10 +4,6 @@
 {% block menu_members %}menu-item--active{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <a href="{% url 'members:member_list' %}" class="btn btn--ghost btn--sm">Back</a>
-  <h2 class="page-title">Edit Member</h2>
-</div>
 
 {% if error %}
   <div class="flash flash--error alert alert--danger" role="alert">{{ error }}</div>
