@@ -30,15 +30,18 @@
   }
   .icon-btn--deactivate:hover { background: rgba(239,68,68,0.20); }
   .icon-btn svg { width: 16px; height: 16px; }
+  .icon-btn--csv {
+    background: var(--surface-2, #f1f5f9);
+    color: #16a34a;
+    flex-shrink: 0;
+  }
+  .icon-btn--csv:hover { background: rgba(22,163,74,0.12); }
   .table-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
   .member-mobile-card__actions { display: flex; gap: 6px; align-items: center; }
 </style>
 
 <div class="page-header">
   <h2 class="page-title">Members</h2>
-  <a href="{% url 'members:export_members_csv' %}" class="btn btn--ghost btn--sm" title="Download all members as CSV">
-    ⬇ Export CSV
-  </a>
 </div>
 
 <form method="get" class="filter-row" id="filterForm">
@@ -56,6 +59,16 @@
       {% endfor %}
     </ul>
   </div>
+
+  <!-- CSV Download icon beside status dropdown -->
+  <a href="{% url 'members:export_members_csv' %}{% if query or status_filter %}?q={{ query }}&status={{ status_filter }}{% endif %}"
+     class="icon-btn icon-btn--csv" title="Download CSV">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+  </a>
 </form>
 
 {% if page_obj.object_list %}
