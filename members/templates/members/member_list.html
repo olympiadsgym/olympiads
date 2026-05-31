@@ -34,8 +34,12 @@
     background: var(--surface-2, #f1f5f9);
     color: #16a34a;
     flex-shrink: 0;
+    border: 1px solid var(--border, #e2e8f0);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
   }
-  .icon-btn--csv:hover { background: rgba(22,163,74,0.12); }
+  .icon-btn--csv:hover { background: rgba(22,163,74,0.12); border-color: #16a34a; }
   .table-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
   .member-mobile-card__actions { display: flex; gap: 6px; align-items: center; }
 </style>
@@ -47,28 +51,29 @@
 <form method="get" class="filter-row" id="filterForm">
   <input type="search" name="q" value="{{ query }}" class="search-input" placeholder="Search by name..." aria-label="Search members">
   <input type="hidden" name="status" id="statusHidden" value="{{ status_filter }}">
-  <div class="custom-dropdown" id="statusDropdown">
-    <button type="button" class="custom-dropdown__btn" id="statusDropdownBtn">
-      <span id="statusDropdownLabel">{% if status_filter %}{{ status_filter }}{% else %}All Statuses{% endif %}</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-    </button>
-    <ul class="custom-dropdown__list" id="statusDropdownList">
-      <li class="custom-dropdown__item {% if not status_filter %}custom-dropdown__item--active{% endif %}" data-value="">All Statuses</li>
-      {% for value, label in status_choices %}
-        <li class="custom-dropdown__item {% if status_filter == value %}custom-dropdown__item--active{% endif %}" data-value="{{ value }}">{{ label }}</li>
-      {% endfor %}
-    </ul>
+  <!-- Dropdown + CSV icon in one inline group -->
+  <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+    <div class="custom-dropdown" id="statusDropdown">
+      <button type="button" class="custom-dropdown__btn" id="statusDropdownBtn">
+        <span id="statusDropdownLabel">{% if status_filter %}{{ status_filter }}{% else %}All Statuses{% endif %}</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <ul class="custom-dropdown__list" id="statusDropdownList">
+        <li class="custom-dropdown__item {% if not status_filter %}custom-dropdown__item--active{% endif %}" data-value="">All Statuses</li>
+        {% for value, label in status_choices %}
+          <li class="custom-dropdown__item {% if status_filter == value %}custom-dropdown__item--active{% endif %}" data-value="{{ value }}">{{ label }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <a href="{% url 'members:export_members_csv' %}{% if query or status_filter %}?q={{ query }}&status={{ status_filter }}{% endif %}"
+       class="icon-btn icon-btn--csv" title="Download CSV">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    </a>
   </div>
-
-  <!-- CSV Download icon beside status dropdown -->
-  <a href="{% url 'members:export_members_csv' %}{% if query or status_filter %}?q={{ query }}&status={{ status_filter }}{% endif %}"
-     class="icon-btn icon-btn--csv" title="Download CSV">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-      <polyline points="7 10 12 15 17 10"/>
-      <line x1="12" y1="15" x2="12" y2="3"/>
-    </svg>
-  </a>
 </form>
 
 {% if page_obj.object_list %}
