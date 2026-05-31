@@ -19,7 +19,7 @@ from core.models import MembershipPlan, Announcement
 from core.decorators import admin_required, member_required
 from .models import Member, AttendanceLog, User
 
-PORTAL_LOGIN_URL = "https://olympiads-beta.vercel.app/portal/login/"
+PORTAL_LOGIN_URL = "https://olympiads-beta.vercel.app/members/login/"
 
 VISIT_HISTORY_THRESHOLD = 20  # US-08: paginate only when total exceeds this
 
