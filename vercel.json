@@ -26,7 +26,6 @@
   ],
   "crons": [
     {
-      "_comment": "Daily task schedule (UTC). To change the run time: update the 'schedule' field below using cron syntax 'MM HH * * *', then also set DAILY_TASK_HOUR and DAILY_TASK_MINUTE in your Vercel environment variables to match, and redeploy. Current default: 22:00 UTC = 6:00 AM Manila time.",
       "path": "/gym-mgmt-2026/cron/daily-tasks/",
       "schedule": "0 22 * * *"
     }
