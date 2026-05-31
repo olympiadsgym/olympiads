@@ -12,6 +12,41 @@
   <div class="flash flash--error alert alert--danger" role="alert">{{ error }}</div>
 {% endif %}
 
+{% if email_failed %}
+<div class="card" style="border-left: 4px solid #f59e0b; margin-bottom: 1.5rem;" role="alert" aria-live="assertive">
+  <div style="display: flex; align-items: flex-start; gap: 12px; padding: 1rem 1.25rem;">
+    <div style="flex: 1;">
+      <p style="font-weight: 500; margin: 0 0 4px;">Member registered — welcome email could not be sent</p>
+      <p style="font-size: 13px; color: var(--color-text-secondary); margin: 0 0 1rem;">
+        The member was saved successfully, but the automated email failed to deliver.
+        Please copy these credentials and give them to <strong>{{ fallback_credentials.name }}</strong> in person.
+      </p>
+      <table style="font-size: 13px; border-collapse: collapse; width: 100%; max-width: 480px;">
+        <tr>
+          <td style="padding: 6px 12px 6px 0; color: var(--color-text-secondary); white-space: nowrap;">Member name</td>
+          <td style="padding: 6px 0; font-weight: 500;">{{ fallback_credentials.name }}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 12px 6px 0; color: var(--color-text-secondary); white-space: nowrap;">Login email</td>
+          <td style="padding: 6px 0; font-family: monospace;">{{ fallback_credentials.email }}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 12px 6px 0; color: var(--color-text-secondary); white-space: nowrap;">Temporary password</td>
+          <td style="padding: 6px 0; font-family: monospace; font-weight: 500; letter-spacing: 1px;">{{ fallback_credentials.password }}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 12px 6px 0; color: var(--color-text-secondary); white-space: nowrap;">Portal URL</td>
+          <td style="padding: 6px 0;"><a href="{{ fallback_credentials.portal_url }}" target="_blank" rel="noopener">{{ fallback_credentials.portal_url }}</a></td>
+        </tr>
+      </table>
+      <p style="font-size: 12px; color: var(--color-text-secondary); margin: 1rem 0 0;">
+        This page will not show this password again. Once you navigate away, it is gone.
+      </p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <div class="card form-card">
   <form method="post" novalidate id="register-form">
     {% csrf_token %}

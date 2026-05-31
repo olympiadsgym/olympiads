@@ -100,7 +100,17 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='').replace(' ', '')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 ADMIN_ALERT_EMAIL = config('ADMIN_ALERT_EMAIL', default='').strip()
 
-# Scheduler — daily task run time (24-hour format, default 10 PM)
+# Vercel Cron webhook secret — must match the value set in the Vercel dashboard.
+# Generate one with: python -c "import secrets; print(secrets.token_hex(32))"
+CRON_SECRET = config('CRON_SECRET', default='')
+
+# Scheduler — daily task run time (UTC, 24-hour format).
+# To change the schedule:
+#   1. Set DAILY_TASK_HOUR and DAILY_TASK_MINUTE in your Vercel environment variables.
+#   2. Update the "schedule" field in vercel.json to match (format: "MM HH * * *").
+#   3. Redeploy. Both values must stay in sync — settings.py is the source of truth
+#      for documentation; vercel.json drives the actual Vercel Cron trigger.
+# Default: 22:00 UTC (10 PM UTC = 6 AM Manila time).
 DAILY_TASK_HOUR = config('DAILY_TASK_HOUR', default=22, cast=int)
 DAILY_TASK_MINUTE = config('DAILY_TASK_MINUTE', default=0, cast=int)
 

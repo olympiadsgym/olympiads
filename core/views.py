@@ -258,11 +258,23 @@ def cron_daily_tasks(request):
 
     try:
         from django.core.management import call_command
+        import logging as _logging
+        configured_hour = settings.DAILY_TASK_HOUR
+        configured_minute = settings.DAILY_TASK_MINUTE
+        _logging.getLogger(__name__).info(
+            'cron_daily_tasks triggered. Configured schedule: %02d:%02d UTC '
+            '(DAILY_TASK_HOUR=%s, DAILY_TASK_MINUTE=%s). '
+            'Verify this matches the schedule in vercel.json.',
+            configured_hour, configured_minute, configured_hour, configured_minute,
+        )
         call_command('daily_tasks')
-        return JsonResponse({'status': 'ok'})
+        return JsonResponse({
+            'status': 'ok',
+            'configured_schedule_utc': f'{configured_hour:02d}:{configured_minute:02d}',
+        })
     except Exception as exc:
-        import logging
-        logging.getLogger(__name__).exception('cron_daily_tasks failed')
+        import logging as _logging2
+        _logging2.getLogger(__name__).exception('cron_daily_tasks failed')
         return JsonResponse({'error': str(exc)}, status=500)
 
 

@@ -166,6 +166,73 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.custom-dropdown__list.open').forEach(function (l) { l.classList.remove('open'); });
   });
 
+  // EH-11: network error detection for all POST form submissions.
+  // A network failure (offline, timeout, DNS failure) is distinct from a
+  // server-side validation error — the server never receives the request so
+  // no Django error page is returned. We detect it via fetch and show an
+  // inline banner so the user knows the action did not go through.
+  document.querySelectorAll('form[method="post"]').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      // Skip forms that opt out (e.g. file uploads with enctype)
+      if (form.dataset.noNetworkCheck) return;
+
+      // Only intercept if we can reasonably use fetch (modern browsers)
+      if (typeof fetch === 'undefined') return;
+
+      e.preventDefault();
+
+      var submitBtn = form.querySelector('[type="submit"]');
+      var originalText = submitBtn ? submitBtn.textContent : null;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting…';
+      }
+
+      // Remove any previous network-error banner on this form
+      var prev = form.querySelector('.network-error-banner');
+      if (prev) prev.remove();
+
+      var formData = new FormData(form);
+      var action = form.action || window.location.href;
+
+      fetch(action, {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin',
+        // No redirect: 'manual' — we want the browser to follow redirects normally
+      })
+      .then(function (response) {
+        // Server responded (even with 4xx/5xx) — let the browser handle it
+        // by navigating to the response URL (handles both redirects and re-renders)
+        return response.text().then(function (html) {
+          if (response.redirected || response.url !== window.location.href) {
+            window.location.href = response.url;
+          } else {
+            // Server returned a page in-place (e.g. validation errors) — replace DOM
+            document.open();
+            document.write(html);
+            document.close();
+          }
+        });
+      })
+      .catch(function () {
+        // Network failure — server was never reached; no data was committed
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
+        }
+        var banner = document.createElement('div');
+        banner.className = 'flash flash--error network-error-banner';
+        banner.setAttribute('role', 'alert');
+        banner.textContent =
+          'The action could not be completed — please check your connection and try again. ' +
+          'No data was saved.';
+        form.insertAdjacentElement('beforebegin', banner);
+        banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    });
+  });
+
   // Midnight auto-logout: check every minute if it's past midnight
   function checkMidnight() {
     var now = new Date();

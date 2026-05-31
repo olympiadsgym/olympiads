@@ -321,11 +321,20 @@ def register_member(request):
 
                     except Exception as e:
                         logger.exception("Failed to send registration email to %s", email)
-                        messages.warning(
-                            request,
-                            "Member was registered, but the welcome email could not be sent. "
-                            f"Email error: {e}"
-                        )
+                        # UC-01 A3: email failed — stay on page and show credentials
+                        # so the admin can relay them to the member manually.
+                        return render(request, 'members/register.html', {
+                            'plans': plans,
+                            'error': None,
+                            'today': timezone.localdate().isoformat(),
+                            'email_failed': True,
+                            'fallback_credentials': {
+                                'name': name,
+                                'email': email,
+                                'password': temp_pw,
+                                'portal_url': PORTAL_LOGIN_URL,
+                            },
+                        })
 
                     messages.success(request, f"{name} registered successfully.")
                     return redirect('members:member_list')
