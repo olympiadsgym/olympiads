@@ -86,8 +86,8 @@
       <tbody>
         {% for member in page_obj %}
         <tr>
-          <td class="member-name-cell"><span class="status-dot status-dot--{{ member.status|lower|cut:' ' }}" aria-hidden="true"></span>{{ member.name }}</td>
-          <td><span class=aria-label="Status: {{ member.status }}">{{ member.status }}</span></td>
+          <td class="member-name-cell"><span class= aria-hidden="true"></span>{{ member.name }}</td>
+          <td><span class="badge badge--{{ member.status|lower|cut:' ' }}" aria-label="Status: {{ member.status }}">{{ member.status }}</span></td>
           <td>{{ member.plan.plan_name }}</td>
           <td>{{ member.expiry_date }}</td>
           <td class="table-actions">
