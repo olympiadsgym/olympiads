@@ -34,6 +34,7 @@ class NotificationLog(models.Model):
         ('expiry_notification', 'Expiry Notification'),
     ]
     STATUS_CHOICES = [
+        ('pending', 'Pending'),
         ('sent', 'Sent'),
         ('failed', 'Failed'),
         ('retry_failed', 'Retry Failed'),
@@ -46,7 +47,7 @@ class NotificationLog(models.Model):
     )
     notification_type = models.CharField(max_length=25, choices=NOTIFICATION_TYPES)
     sent_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='sent')
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='pending')
     retry_count = models.PositiveIntegerField(default=0)
 
     def mark_sent(self):

@@ -32,8 +32,13 @@ class SessionExpireMiddleware:
             # Rule 2: 30-minute inactivity
             last_activity = request.session.get('last_activity')
             if last_activity and (now_ts - last_activity) > SESSION_TIMEOUT_SECONDS:
-                request.session.flush()
-                request.session['session_timed_out'] = True  # flag for message
+                # Clear auth keys individually so we can still write session_timed_out
+                # before redirecting. flush() would wipe the flag we are about to set.
+                for key in ('admin_id', 'admin_email', 'member_user_id',
+                            'session_start_date', 'last_activity'):
+                    request.session.pop(key, None)
+                request.session['session_timed_out'] = True
+                request.session.modified = True
                 return redirect('core:login' if is_admin else 'members:portal_login')
 
             # Update last activity timestamp on every request

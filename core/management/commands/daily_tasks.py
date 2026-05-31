@@ -340,7 +340,7 @@ class Command(BaseCommand):
                         log = NotificationLog.objects.create(
                             member=member,
                             notification_type='inactivity_alert',
-                            status='sent',
+                            status='pending',
                         )
                         try:
                             send_html_mail(
@@ -372,6 +372,10 @@ class Command(BaseCommand):
 
                     # 3. Expiry notification (sent to member)
                     if member.status == 'Expiring Soon':
+                        # Guard: skip if a successful notification was already sent
+                        # this expiry cycle (within the 7-day window).
+                        # retry_failed logs are intentionally excluded so the next
+                        # daily run will attempt delivery again until one succeeds.
                         already_notified = NotificationLog.objects.filter(
                             member=member,
                             notification_type='expiry_notification',
@@ -380,10 +384,12 @@ class Command(BaseCommand):
                         ).exists()
 
                         if not already_notified:
+                            # Create the log as 'pending' so a pre-send crash does
+                            # not leave a phantom 'sent' record blocking future retries.
                             log = NotificationLog.objects.create(
                                 member=member,
                                 notification_type='expiry_notification',
-                                status='sent',
+                                status='pending',
                             )
                             try:
                                 send_html_mail(

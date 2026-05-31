@@ -1,14 +1,10 @@
+from django.contrib import admin
 from django.urls import path, include
-from django.views.generic import RedirectView
 
 urlpatterns = [
-    # Root → admin login
-    path('', RedirectView.as_view(url='/gym-mgmt-2026/', permanent=False)),
-
-    # Admin area
-    path('gym-mgmt-2026/', include('core.urls')),
-    path('gym-mgmt-2026/', include(('members.urls', 'members_admin'), namespace='members_admin')),
-
-    # Member portal
-    path('portal/', include(('members.urls', 'members'), namespace='members')),
+    path('admin/', admin.site.urls),
+    # Admin/Staff Portal
+    path('', include('core.urls')),
+    # Member Portal
+    path('members/', include('members.urls')),
 ]

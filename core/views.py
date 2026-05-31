@@ -1,8 +1,10 @@
-﻿from django.shortcuts import render, redirect, get_object_or_404
+﻿import time
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Q, Count
 from django.core.paginator import Paginator
+from django.conf import settings
 import datetime
 import json
 
@@ -14,6 +16,8 @@ from members.models import Member, AttendanceLog, User
 def login_view(request):
     if request.session.get('admin_id'):
         return redirect('core:dashboard')
+    # Clear the timeout flag once the login page renders so it shows only once
+    timed_out = request.session.pop('session_timed_out', False)
     error = None
     if request.method == 'POST':
         email = request.POST.get('email', '').strip().lower()
@@ -30,6 +34,7 @@ def login_view(request):
                 request.session['admin_id'] = user.pk
                 request.session['admin_email'] = user.email
                 request.session['session_start_date'] = str(timezone.localdate())
+                request.session['last_activity'] = time.time()
                 return redirect('core:dashboard')
             else:
                 ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
@@ -223,6 +228,42 @@ def announcement_edit(request, pk):
         else:
             messages.error(request, 'Title and body are required.')
     return render(request, 'core/announcement_edit.html', {'announcement': announcement})
+
+
+import hmac
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse
+
+
+@csrf_exempt
+@require_POST
+def cron_daily_tasks(request):
+    """
+    Webhook called by Vercel Cron to run the daily_tasks management command.
+
+    Vercel automatically sets Authorization: Bearer <CRON_SECRET> on every
+    cron-triggered request.  We verify it with a constant-time comparison so
+    the endpoint cannot be triggered by anyone who does not know the secret.
+    """
+    secret = settings.CRON_SECRET
+    if not secret:
+        return JsonResponse({'error': 'CRON_SECRET is not configured on this server.'}, status=500)
+
+    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+    expected = f'Bearer {secret}'
+
+    if not hmac.compare_digest(auth_header, expected):
+        return JsonResponse({'error': 'Unauthorized.'}, status=401)
+
+    try:
+        from django.core.management import call_command
+        call_command('daily_tasks')
+        return JsonResponse({'status': 'ok'})
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).exception('cron_daily_tasks failed')
+        return JsonResponse({'error': str(exc)}, status=500)
 
 
 @admin_required

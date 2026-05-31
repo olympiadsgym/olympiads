@@ -15,4 +15,6 @@ urlpatterns = [
     path('announcements/<int:pk>/edit/', views.announcement_edit, name='announcement_edit'),
     path('announcements/<int:pk>/delete/', views.announcement_delete, name='announcement_delete'),
     path('notifications/', views.notification_log_view, name='notification_log'),
+    # Internal cron webhook — called by Vercel Cron, protected by CRON_SECRET
+    path('cron/daily-tasks/', views.cron_daily_tasks, name='cron_daily_tasks'),
 ]

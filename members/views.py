@@ -373,13 +373,98 @@ def edit_member(request, pk):
                 member.expiry_date = expiry_date
                 member.status = member.compute_status()
 
-                if member.email != email:
+                email_changed = member.email != email
+                old_email = member.email
+
+                if email_changed:
                     if member.user:
                         member.user.email = email
                         member.user.save(update_fields=['email'])
                     member.email = email
 
                 member.save()
+
+                # Notify the member at their new address when email is changed
+                if email_changed:
+                    try:
+                        plain = (
+                            f"Hi {member.name},\n\n"
+                            f"Your OLYMPIADS gym portal login email has been updated by staff.\n\n"
+                            f"Your new login email is: {email}\n"
+                            f"Your password remains unchanged.\n\n"
+                            f"If you did not expect this change, please contact the gym immediately.\n\n"
+                            f"— OLYMPIADS Gym Team"
+                        )
+                        html_body = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:#F1F5F9;font-family:'Poppins',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F1F5F9;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+          <tr>
+            <td style="background:#0F172A;border-radius:14px 14px 0 0;padding:28px 36px 24px;text-align:center;">
+              <span style="font-size:22px;font-weight:800;color:#FFFFFF;letter-spacing:2px;">OLYMPIADS</span><br>
+              <span style="font-size:11px;color:#94A3B8;letter-spacing:3px;text-transform:uppercase;">Gym Management</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#FFFFFF;padding:36px;border-left:1px solid #E2E8F0;border-right:1px solid #E2E8F0;">
+              <p style="text-align:center;margin-bottom:20px;">
+                <span style="background:#EFF6FF;color:#1D4ED8;font-size:12px;font-weight:600;padding:6px 16px;border-radius:999px;border:1px solid #BFDBFE;text-transform:uppercase;">
+                  Login Email Updated
+                </span>
+              </p>
+              <h1 style="font-size:22px;font-weight:700;color:#0F172A;text-align:center;margin-bottom:8px;">Hi {member.name},</h1>
+              <p style="font-size:14px;color:#64748B;text-align:center;margin-bottom:28px;line-height:1.6;">
+                Your gym portal login email has been updated by staff.
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:16px 20px;border-bottom:1px solid #E2E8F0;">
+                    <span style="font-size:11px;color:#94A3B8;display:block;margin-bottom:3px;text-transform:uppercase;">New Login Email</span>
+                    <span style="font-size:15px;font-weight:600;color:#0F172A;">{email}</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <span style="font-size:13px;color:#64748B;">Your password remains unchanged. If you did not expect this change, please contact the gym immediately.</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#F8FAFC;border:1px solid #E2E8F0;border-top:none;border-radius:0 0 14px 14px;padding:20px 36px;text-align:center;">
+              <p style="font-size:12px;color:#94A3B8;">This is an automated message from OLYMPIADS Gym Management System.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+                        msg = EmailMultiAlternatives(
+                            subject="[OLYMPIADS] Your login email has been updated",
+                            body=plain,
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            to=[email],
+                        )
+                        msg.attach_alternative(html_body, "text/html")
+                        msg.send(fail_silently=False)
+                        logger.info(f"Email-change notification sent to {email}")
+                    except Exception as e:
+                        logger.error(f"Failed to send email-change notification to {email}: {e}")
+                        messages.warning(
+                            request,
+                            f"{member.name} updated, but the email-change notification could not be sent."
+                        )
+
                 messages.success(request, f"{member.name} updated.")
                 return redirect('members:member_list')
 
@@ -584,6 +669,8 @@ def portal_login(request):
     if request.session.get('member_user_id'):
         return redirect('members:portal_dashboard')
 
+    # Clear the timeout flag once the login page renders so it shows only once
+    timed_out = request.session.pop('session_timed_out', False)
     error = None
     if request.method == 'POST':
         email = request.POST.get('email', '').strip().lower()

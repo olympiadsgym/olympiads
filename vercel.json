@@ -23,5 +23,11 @@
       "src": "/(.*)",
       "dest": "olympiads/wsgi.py"
     }
+  ],
+  "crons": [
+    {
+      "path": "/gym-mgmt-2026/cron/daily-tasks/",
+      "schedule": "0 14 * * *"
+    }
   ]
 }
