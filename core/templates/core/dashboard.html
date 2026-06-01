@@ -116,7 +116,7 @@
     <h3 class="section-title">Today's Check-ins ({{ todays_checkins.count }})</h3>
     <form method="post" action="{% url 'core:refresh_all_statuses' %}" style="display:inline;">
       {% csrf_token %}
-      <button type="submit" class="btn btn--ghost btn--sm">&#8635; Refresh Statuses</button>
+      <button type="submit" class="btn btn--ghost btn--sm" title="Refresh Statuses" aria-label="Refresh Statuses"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.36-3.36L23 10M1 14l5.13 4.36A9 9 0 0 0 20.49 15"/></svg></button>
     </form>
   </div>
   {% if todays_checkins %}
