@@ -193,6 +193,10 @@
       margin-top: 8px;
       transition: background 0.2s, transform 0.1s;
       letter-spacing: 0.3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
     .btn--primary:hover {
@@ -202,6 +206,23 @@
 
     .btn--primary:active {
       transform: translateY(0);
+    }
+
+    .btn--primary:disabled {
+      opacity: 0.8;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .login-spinner {
+      display: none;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
     }
 
     .alert {
@@ -273,7 +294,12 @@
             </button>
           </div>
         </div>
-        <button type="submit" class="btn--primary">Sign In</button>
+        <button type="submit" class="btn--primary" id="loginBtn">
+          <span id="loginBtnText">Sign In</span>
+          <svg id="loginSpinner" class="login-spinner" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <path d="M12 2a10 10 0 0 1 10 10" />
+          </svg>
+        </button>
       </form>
     </section>
   </main>
@@ -289,6 +315,13 @@
         imgs[current].classList.add('active');
       }, 5000);
     })();
+
+    document.querySelector('form').addEventListener('submit', function () {
+      var btn = document.getElementById('loginBtn');
+      document.getElementById('loginBtnText').textContent = 'Signing In...';
+      document.getElementById('loginSpinner').style.display = 'block';
+      btn.disabled = true;
+    });
   </script>
 </body>
 </html>
