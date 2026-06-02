@@ -6,6 +6,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='dev-secret-key-change-me')
 
+# AES-256 key for encrypting Member email and contact in the database.
+# Generate: python -c "import base64,os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
+FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY', default='')
+
 
 def parse_debug(value):
     return str(value).strip().lower() in {'1', 'true', 'yes', 'on', 'debug', 'development'}
@@ -105,12 +109,6 @@ ADMIN_ALERT_EMAIL = config('ADMIN_ALERT_EMAIL', default='').strip()
 CRON_SECRET = config('CRON_SECRET', default='')
 
 # Scheduler — daily task run time (UTC, 24-hour format).
-# To change the schedule:
-#   1. Set DAILY_TASK_HOUR and DAILY_TASK_MINUTE in your Vercel environment variables.
-#   2. Update the "schedule" field in vercel.json to match (format: "MM HH * * *").
-#   3. Redeploy. Both values must stay in sync — settings.py is the source of truth
-#      for documentation; vercel.json drives the actual Vercel Cron trigger.
-# Default: 22:00 UTC (10 PM UTC = 6 AM Manila time).
 DAILY_TASK_HOUR = config('DAILY_TASK_HOUR', default=22, cast=int)
 DAILY_TASK_MINUTE = config('DAILY_TASK_MINUTE', default=0, cast=int)
 
@@ -123,14 +121,10 @@ CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 X_FRAME_OPTIONS = 'DENY'
 SECURE_CONTENT_TYPE_NOSNIFF = True
-# Cookie / CSRF fixes for Vercel deployment
 SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_TRUSTED_ORIGINS = [
     'https://*.vercel.app',
     'https://olympiads-beta.vercel.app',
 ]
 
-# Vercel serverless: use signed-cookie session backend so session data
-# travels with the cookie itself — no DB round-trip needed between
-# the login POST and the dashboard GET on different lambda instances.
 SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'

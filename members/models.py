@@ -2,6 +2,7 @@ import datetime
 from django.db import models
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
+from .encryption import EncryptedFieldDescriptor, make_lookup_hash
 
 
 class User(models.Model):
@@ -29,7 +30,6 @@ class User(models.Model):
         if self.failed_login_count >= 5:
             self.locked_until = timezone.now() + datetime.timedelta(minutes=15)
         self.save(update_fields=['failed_login_count', 'locked_until'])
-        # Log the failed attempt with timestamp and IP (NFR-S06)
         FailedLoginLog.objects.create(
             account_identifier=self.email,
             ip_address=ip_address or '',
@@ -65,8 +65,11 @@ class Member(models.Model):
     ]
 
     name = models.CharField(max_length=150)
-    email = models.EmailField(max_length=254, unique=True)
-    contact = models.CharField(max_length=20)
+
+    _email = models.TextField(db_column='email_enc', unique=False)
+    email_hash = models.CharField(max_length=64, unique=True, blank=True, default='')
+    email = EncryptedFieldDescriptor('_email')
+
     plan = models.ForeignKey(
         'core.MembershipPlan',
         on_delete=models.PROTECT,
@@ -85,26 +88,22 @@ class Member(models.Model):
         related_name='member_profile',
     )
 
-    def compute_status(self):
-        """
-        BR-01: Active — has checked in within the last 7 days and membership not expired.
-        BR-02: Inactive — no check-in for more than 7 days and membership not expired.
-        BR-03: Expiring Soon — expiry within 7 days.
-        BR-04: Expired — expiry_date < today.
-        """
-        today = timezone.localdate()
+    def save(self, *args, **kwargs):
+        from .encryption import decrypt, make_lookup_hash
+        plaintext_email = decrypt(self._email) if self._email else ''
+        self.email_hash = make_lookup_hash(plaintext_email)
+        super().save(*args, **kwargs)
 
+    def compute_status(self):
+        today = timezone.localdate()
         if self.expiry_date < today:
             return 'Expired'
-
         days_left = (self.expiry_date - today).days
         if days_left <= 7:
             return 'Expiring Soon'
-
         last = self.last_checkin()
         if last is None or (today - last).days > 7:
             return 'Inactive'
-
         return 'Active'
 
     def days_remaining(self):
@@ -116,14 +115,8 @@ class Member(models.Model):
         return log.check_in_date if log else None
 
     def is_newly_inactive(self):
-        """
-        Returns True if this member is Inactive and no inactivity_alert
-        NotificationLog has been created since the last check-in (or ever).
-        Prevents duplicate alerts per inactivity period.
-        """
         if self.status != 'Inactive':
             return False
-
         last = self.last_checkin()
         qs = self.notification_logs.filter(notification_type='inactivity_alert')
         if last:
@@ -155,7 +148,6 @@ class AttendanceLog(models.Model):
         return f"{self.member.name} — {self.check_in_date} {self.check_in_time}"
 
     def compute_session_end_time(self, duration_minutes=120):
-        """Calculate session end time (default 2 hours after check-in)."""
         from datetime import datetime, timedelta
         check_in = datetime.combine(self.check_in_date, self.check_in_time)
         end = check_in + timedelta(minutes=duration_minutes)

@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 from core.models import MembershipPlan, Announcement
 from core.decorators import admin_required, member_required
 from .models import Member, AttendanceLog, User
+from .encryption import make_lookup_hash
 
 PORTAL_LOGIN_URL = "https://olympiads-beta.vercel.app/members/login/"
 
@@ -85,12 +86,11 @@ def export_members_csv(request):
     response['Content-Disposition'] = 'attachment; filename="olympiads_members.csv"'
 
     writer = csv.writer(response)
-    writer.writerow(['Name', 'Email', 'Contact', 'Plan', 'Status', 'Start Date', 'Expiry Date', 'Days Remaining'])
+    writer.writerow(['Name', 'Email', 'Plan', 'Status', 'Start Date', 'Expiry Date', 'Days Remaining'])
     for m in members:
         writer.writerow([
             m.name,
             m.email,
-            m.contact,
             m.plan.plan_name,
             m.status,
             m.start_date,
@@ -109,14 +109,13 @@ def register_member(request):
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
         email = request.POST.get('email', '').strip().lower()
-        contact = request.POST.get('contact', '').strip()
         plan_id = request.POST.get('plan_id')
         start_date_str = request.POST.get('start_date')
 
-        if not all([name, email, contact, plan_id, start_date_str]):
+        if not all([name, email, plan_id, start_date_str]):
             error = 'All fields are required.'
         else:
-            existing_member = Member.objects.filter(email=email).first()
+            existing_member = Member.objects.filter(email_hash=make_lookup_hash(email)).first()
             if existing_member and existing_member.is_active:
                 error = 'This email is already registered to an active member.'
             else:
@@ -133,7 +132,6 @@ def register_member(request):
                         with transaction.atomic():
                             member = existing_member
                             member.name = name
-                            member.contact = contact
                             member.plan = plan
                             member.start_date = start_date
                             member.expiry_date = expiry_date
@@ -161,7 +159,6 @@ def register_member(request):
                             member = Member.objects.create(
                                 name=name,
                                 email=email,
-                                contact=contact,
                                 plan=plan,
                                 start_date=start_date,
                                 expiry_date=expiry_date,
@@ -359,14 +356,21 @@ def edit_member(request, pk):
 
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
-        email = request.POST.get('email', '').strip().lower()
-        contact = request.POST.get('contact', '').strip()
+        email_input = request.POST.get('email', '').strip().lower()
         plan_id = request.POST.get('plan_id')
         start_date_str = request.POST.get('start_date')
 
-        if not all([name, email, contact, plan_id, start_date_str]):
+        current_email = member.email
+
+        from .encryption import mask_email
+        if not email_input or email_input == mask_email(current_email):
+            email = current_email
+        else:
+            email = email_input
+
+        if not all([name, email, plan_id, start_date_str]):
             error = 'All fields are required.'
-        elif Member.objects.filter(email=email).exclude(pk=pk).exists():
+        elif Member.objects.filter(email_hash=make_lookup_hash(email)).exclude(pk=pk).exists():
             error = 'This email is already used by another member.'
         else:
             try:
@@ -376,14 +380,13 @@ def edit_member(request, pk):
                 expiry_date = start_date + timezone.timedelta(days=plan.duration_days)
 
                 member.name = name
-                member.contact = contact
                 member.plan = plan
                 member.start_date = start_date
                 member.expiry_date = expiry_date
                 member.status = member.compute_status()
 
-                email_changed = member.email != email
-                old_email = member.email
+                email_changed = current_email != email
+                old_email = current_email
 
                 if email_changed:
                     if member.user:
@@ -482,6 +485,7 @@ def edit_member(request, pk):
             except ValueError:
                 error = 'Invalid date format.'
 
+    from .encryption import mask_email
     today = timezone.localdate()
     can_renew = member.status in ('Expiring Soon', 'Expired') or member.start_date != today
 
@@ -490,6 +494,7 @@ def edit_member(request, pk):
         'plans': plans,
         'error': error,
         'can_renew': can_renew,
+        'masked_email': mask_email(member.email),
     })
 
 

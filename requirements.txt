@@ -5,3 +5,4 @@ django[argon2]
 whitenoise==6.8.2
 psycopg2-binary
 dj-database-url
+cryptography==44.0.3
