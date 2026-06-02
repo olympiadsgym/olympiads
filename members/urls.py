@@ -14,6 +14,8 @@ urlpatterns = [
     # Member portal (under /portal/)
     path('login/', views.portal_login, name='portal_login'),
     path('logout/', views.portal_logout, name='portal_logout'),
+    path('forgot-password/', views.forgot_password, name='forgot_password'),
+    path('reset-password/<str:token>/', views.reset_password, name='reset_password'),
     path('dashboard/', views.portal_dashboard, name='portal_dashboard'),
     path('change-password/', views.change_password, name='change_password'),
 ]

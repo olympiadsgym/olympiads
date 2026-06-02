@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 from core.models import MembershipPlan, Announcement
 from core.decorators import admin_required, member_required
-from .models import Member, AttendanceLog, User
+from .models import Member, AttendanceLog, User, PasswordResetToken
 from .encryption import make_lookup_hash
 
 PORTAL_LOGIN_URL = "https://olympiads-beta.vercel.app/members/login/"
@@ -788,4 +788,208 @@ def change_password(request):
     return render(request, 'members/change_password.html', {
         'error': error,
         'success': success,
+    })
+
+
+# --- Forgot Password Flow -----------------------------------------------
+
+def forgot_password(request):
+    """Step 1: Member enters their email address to initiate password reset."""
+    error = None
+    sent = False
+
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip().lower()
+
+        if not email:
+            error = 'Please enter your email address.'
+        else:
+            # Check if email exists (encrypted in Member)
+            from .encryption import make_lookup_hash
+            email_hash = make_lookup_hash(email)
+            
+            try:
+                member = Member.objects.get(email_hash=email_hash, is_active=True)
+                user = member.user
+                
+                if user:
+                    # Generate reset token
+                    token = secrets.token_urlsafe(48)
+                    expires_at = timezone.now() + timezone.timedelta(hours=24)
+                    
+                    # Delete any existing reset token for this user
+                    PasswordResetToken.objects.filter(user=user).delete()
+                    
+                    # Create new reset token
+                    reset_token_obj = PasswordResetToken.objects.create(
+                        user=user,
+                        token=token,
+                        expires_at=expires_at
+                    )
+                    
+                    # Build reset link
+                    reset_url = f"https://olympiads-beta.vercel.app/members/reset-password/{token}/"
+                    
+                    # Send password reset email
+                    try:
+                        plain_text = (
+                            f"Hi {member.name},\n\n"
+                            f"We received a request to reset your OLYMPIADS password.\n\n"
+                            f"Click the link below to continue:\n"
+                            f"{reset_url}\n\n"
+                            f"This link will expire in 24 hours.\n\n"
+                            f"If you didn't request this, please ignore this email.\n\n"
+                            f"— OLYMPIADS Gym Team"
+                        )
+                        
+                        html_body = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:#0f1117;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f1117;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#1a2847;border-radius:14px;border:1px solid #2d3e5f;">
+          
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding:32px 36px 24px;border-bottom:1px solid #2d3e5f;">
+              <h1 style="margin:0;font-family:'Poppins',Arial,sans-serif;font-size:24px;font-weight:800;color:#ffffff;letter-spacing:2px;">OLYMPIADS</h1>
+              <p style="margin:4px 0 0;font-size:12px;color:#94a3b8;">Password Reset Request</p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding:32px 36px;">
+              <p style="margin:0 0 16px;font-family:'Poppins',Arial,sans-serif;font-size:14px;color:#e2e8f0;line-height:1.6;">
+                Hi {member.name},
+              </p>
+              
+              <p style="margin:0 0 20px;font-family:'Poppins',Arial,sans-serif;font-size:14px;color:#cbd5e1;line-height:1.6;">
+                We received a request to reset your OLYMPIADS password. Click the button below to set a new password:
+              </p>
+              
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding:20px 0;">
+                    <a href="{reset_url}" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 36px;text-decoration:none;border-radius:8px;font-weight:600;font-family:'Poppins',Arial,sans-serif;">
+                      Reset My Password
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="margin:20px 0 0;font-family:'Poppins',Arial,sans-serif;font-size:12px;color:#94a3b8;line-height:1.6;">
+                If the button doesn't work, copy and paste this link into your browser:
+              </p>
+              <p style="margin:8px 0 0;font-family:monospace;font-size:11px;color:#64748b;word-break:break-all;padding:8px 12px;background:rgba(15,17,23,0.5);border-radius:6px;">
+                {reset_url}
+              </p>
+              
+              <p style="margin:20px 0 0;font-family:'Poppins',Arial,sans-serif;font-size:12px;color:#cbd5e1;line-height:1.6;">
+                <strong>This link will expire in 24 hours.</strong>
+              </p>
+              
+              <p style="margin:12px 0 0;font-family:'Poppins',Arial,sans-serif;font-size:12px;color:#94a3b8;line-height:1.6;">
+                If you didn't request a password reset, please ignore this email. Your account is safe.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#0f1117;border:1px solid #2d3e5f;border-top:none;border-radius:0 0 14px 14px;padding:20px 36px;text-align:center;">
+              <p style="font-family:'Poppins',Arial,sans-serif;font-size:12px;color:#94a3b8;margin-bottom:4px;">
+                This is an automated message from OLYMPIADS Gym Management System.
+              </p>
+              <p style="font-family:'Poppins',Arial,sans-serif;font-size:12px;color:#cbd5e1;">
+                Please do not reply to this email.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+                        
+                        msg = EmailMultiAlternatives(
+                            subject="[OLYMPIADS] Password Reset Request",
+                            body=plain_text,
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            to=[email],
+                        )
+                        msg.attach_alternative(html_body, "text/html")
+                        msg.send(fail_silently=False)
+                        logger.info(f"Password reset email sent to {email}")
+                        sent = True
+                    except Exception as e:
+                        logger.error(f"Failed to send password reset email to {email}: {e}")
+                        # Even if email fails, we still show success to user for security
+                        sent = True
+                else:
+                    # Member exists but no associated user account
+                    sent = True
+            except Member.DoesNotExist:
+                # User not found - show success anyway for security
+                sent = True
+
+    return render(request, 'members/forgot_password.html', {
+        'error': error,
+        'sent': sent,
+    })
+
+
+def reset_password(request, token):
+    """Step 2: Member verifies token and sets new password."""
+    error = None
+    success = False
+    token_valid = False
+    token_obj = None
+
+    # Validate token
+    try:
+        token_obj = PasswordResetToken.objects.get(token=token)
+        if token_obj.is_valid():
+            token_valid = True
+        else:
+            error = 'This password reset link has expired. Please request a new one.'
+    except PasswordResetToken.DoesNotExist:
+        error = 'Invalid password reset link.'
+
+    if request.method == 'POST' and token_valid:
+        new_pw = request.POST.get('new_password', '')
+        confirm_pw = request.POST.get('confirm_password', '')
+
+        if not new_pw or not confirm_pw:
+            error = 'Both password fields are required.'
+        else:
+            policy_error = _validate_password_policy(new_pw)
+            if policy_error:
+                error = policy_error
+            elif new_pw != confirm_pw:
+                error = 'Passwords do not match.'
+            else:
+                # Update password
+                user = token_obj.user
+                user.set_password(new_pw)
+                user.reset_failed()  # Clear any failed login attempts
+                user.save()
+                
+                # Delete the reset token
+                token_obj.delete()
+                
+                success = True
+                logger.info(f"Password reset successful for {user.email}")
+
+    return render(request, 'members/reset_password.html', {
+        'error': error,
+        'success': success,
+        'token_valid': token_valid,
     })
