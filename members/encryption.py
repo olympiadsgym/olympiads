@@ -9,12 +9,18 @@ from django.conf import settings
 
 def _load_key() -> bytes:
     raw = getattr(settings, "FIELD_ENCRYPTION_KEY", None)
-    if not raw:
+    if not raw or raw == "your-32-byte-base64url-key-here":
         raise RuntimeError(
-            "FIELD_ENCRYPTION_KEY is not set. Add it to your .env and settings.py."
+            "FIELD_ENCRYPTION_KEY is not set. Add a real key to your .env and settings.py."
         )
+    # Strip any accidental whitespace
+    raw = raw.strip()
+    # Add padding before decoding — urlsafe_b64decode requires correct padding
+    padding = 4 - len(raw) % 4
+    if padding != 4:
+        raw += "=" * padding
     try:
-        key = base64.urlsafe_b64decode(raw + "==")
+        key = base64.urlsafe_b64decode(raw)
     except Exception as exc:
         raise RuntimeError(f"FIELD_ENCRYPTION_KEY is not valid base64url: {exc}") from exc
     if len(key) != 32:
@@ -39,7 +45,10 @@ def decrypt(token: str) -> str:
         return ""
     key = _load_key()
     try:
-        raw = base64.urlsafe_b64decode(token + "==")
+        # Add padding before decoding
+        padding = 4 - len(token) % 4
+        padded = token + ("=" * padding if padding != 4 else "")
+        raw = base64.urlsafe_b64decode(padded)
     except Exception as exc:
         raise ValueError("Encrypted field is not valid base64url.") from exc
     if len(raw) < 28:
@@ -69,6 +78,7 @@ def mask_email(email: str) -> str:
         masked_local = local[0] + '***'
     return f"{masked_local}@{domain}"
 
+
 class EncryptedFieldDescriptor:
     def __init__(self, field_name: str):
         self.field_name = field_name
@@ -83,10 +93,13 @@ class EncryptedFieldDescriptor:
         if not raw:
             return raw
         if len(raw) < 40:
+            # Raw value is too short to be a valid ciphertext — return as-is
             return raw
         try:
             return decrypt(raw)
-        except ValueError:
+        except Exception:
+            # Catch ALL exceptions (including RuntimeError from missing key)
+            # so a misconfigured key never causes a 500 on page load.
             return raw
 
     def __set__(self, obj, value):

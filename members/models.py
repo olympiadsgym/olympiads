@@ -90,7 +90,12 @@ class Member(models.Model):
 
     def save(self, *args, **kwargs):
         from .encryption import decrypt, make_lookup_hash
-        plaintext_email = decrypt(self._email) if self._email else ''
+        try:
+            plaintext_email = decrypt(self._email) if self._email else ''
+        except Exception:
+            # If decryption fails (e.g. key missing, or _email is already plaintext),
+            # fall back to the raw value for hashing so we never crash on save.
+            plaintext_email = self._email or ''
         self.email_hash = make_lookup_hash(plaintext_email)
         super().save(*args, **kwargs)
 
