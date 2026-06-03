@@ -127,6 +127,4 @@ CSRF_TRUSTED_ORIGINS = [
     'https://olympiads-beta.vercel.app',
 ]
 
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-# Note: run 'python manage.py createcachetable' if switching to cache backend.
-# db sessions allow server-side invalidation; signed_cookies cannot be revoked.
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
