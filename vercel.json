@@ -27,7 +27,7 @@
   ],
   "crons": [
     {
-      "path": "/gym-mgmt-2026/cron/daily-tasks/",
+      "path": "/cron/daily-tasks/",
       "schedule": "0 22 * * *"
     }
   ]

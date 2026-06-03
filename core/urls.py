@@ -1,20 +1,21 @@
 from django.urls import path
 from . import views
 
-app_name = 'core'
+app_name = 'members'
 
 urlpatterns = [
-    path('', views.login_view, name='login'),
-    path('logout/', views.logout_view, name='logout'),
-    path('dashboard/', views.dashboard_view, name='dashboard'),
-    path('dashboard/refresh-statuses/', views.refresh_all_statuses, name='refresh_all_statuses'),
-    path('checkin/', views.checkin_view, name='checkin'),
-    path('attendance/<int:log_id>/timeout/', views.timeout_member, name='timeout_member'),
-    path('announcements/', views.announcement_list, name='announcements'),
-    path('announcements/create/', views.announcement_create, name='announcement_create'),
-    path('announcements/<int:pk>/edit/', views.announcement_edit, name='announcement_edit'),
-    path('announcements/<int:pk>/delete/', views.announcement_delete, name='announcement_delete'),
-    path('notifications/', views.notification_log_view, name='notification_log'),
-    # Internal cron webhook — called by Vercel Cron, protected by CRON_SECRET
-    path('cron/daily-tasks/', views.cron_daily_tasks, name='cron_daily_tasks'),
+    # Admin-facing member management (under /members/)
+    path('members/', views.member_list_view, name='member_list'),
+    path('members/export/', views.export_members_csv, name='export_members_csv'),
+    path('members/register/', views.register_member, name='register'),
+    path('members/<int:pk>/edit/', views.edit_member, name='edit_member'),
+    path('members/<int:pk>/renew/', views.renew_member, name='renew_member'),
+    path('members/<int:pk>/deactivate/', views.deactivate_member, name='deactivate_member'),
+    # Member portal (under /portal/)
+    path('login/', views.portal_login, name='portal_login'),
+    path('logout/', views.portal_logout, name='portal_logout'),
+    path('forgot-password/', views.forgot_password, name='forgot_password'),
+    path('reset-password/<str:token>/', views.reset_password, name='reset_password'),
+    path('dashboard/', views.portal_dashboard, name='portal_dashboard'),
+    path('change-password/', views.change_password, name='change_password'),
 ]
