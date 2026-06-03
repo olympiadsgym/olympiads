@@ -226,7 +226,7 @@ def export_members_csv(request):
             m.status,
             m.start_date,
             m.expiry_date,
-            m.days_remaining,
+            m.days_remaining(),  # BUG FIX: was missing () — wrote bound-method object instead of int
         ])
 
     return response

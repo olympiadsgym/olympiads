@@ -56,7 +56,9 @@ class NotificationLog(models.Model):
 
     def mark_failed(self):
         self.retry_count += 1
-        self.status = 'retry_failed' if self.retry_count >= 1 else 'failed'
+        # BUG FIX: logic was inverted — first failure was set to 'retry_failed'.
+        # Correct: first failure → 'failed', subsequent failures → 'retry_failed'.
+        self.status = 'retry_failed' if self.retry_count > 1 else 'failed'
         self.save()
 
     def __str__(self):

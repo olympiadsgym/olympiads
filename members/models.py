@@ -48,7 +48,7 @@ class User(models.Model):
 class PasswordResetToken(models.Model):
     """Store password reset tokens with expiration."""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='reset_token')
-    token = models.CharField(max_length=64, unique=True)
+    token = models.CharField(max_length=128, unique=True)  # BUG FIX: was 64 — token_urlsafe(48) produces exactly 64 chars leaving no margin; 128 is safe
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
 

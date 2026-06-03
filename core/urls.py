@@ -1,21 +1,25 @@
 from django.urls import path
 from . import views
 
-app_name = 'members'
+app_name = 'core'  # BUG FIX: was 'members' — caused all core: URL reversals to fail
 
 urlpatterns = [
-    # Admin-facing member management (under /members/)
-    path('members/', views.member_list_view, name='member_list'),
-    path('members/export/', views.export_members_csv, name='export_members_csv'),
-    path('members/register/', views.register_member, name='register'),
-    path('members/<int:pk>/edit/', views.edit_member, name='edit_member'),
-    path('members/<int:pk>/renew/', views.renew_member, name='renew_member'),
-    path('members/<int:pk>/deactivate/', views.deactivate_member, name='deactivate_member'),
-    # Member portal (under /portal/)
-    path('login/', views.portal_login, name='portal_login'),
-    path('logout/', views.portal_logout, name='portal_logout'),
-    path('forgot-password/', views.forgot_password, name='forgot_password'),
-    path('reset-password/<str:token>/', views.reset_password, name='reset_password'),
-    path('dashboard/', views.portal_dashboard, name='portal_dashboard'),
-    path('change-password/', views.change_password, name='change_password'),
+    # Admin login/logout
+    path('', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    # Admin dashboard
+    path('dashboard/', views.dashboard_view, name='dashboard'),
+    path('dashboard/refresh-statuses/', views.refresh_all_statuses, name='refresh_all_statuses'),
+    # Check-in
+    path('checkin/', views.checkin_view, name='checkin'),
+    path('checkin/timeout/<int:log_id>/', views.timeout_member, name='timeout_member'),
+    # Announcements
+    path('announcements/', views.announcement_list, name='announcements'),
+    path('announcements/create/', views.announcement_create, name='announcement_create'),
+    path('announcements/<int:pk>/delete/', views.announcement_delete, name='announcement_delete'),
+    path('announcements/<int:pk>/edit/', views.announcement_edit, name='announcement_edit'),
+    # Notifications log
+    path('notifications/', views.notification_log_view, name='notification_log'),
+    # Cron webhook
+    path('cron/daily-tasks/', views.cron_daily_tasks, name='cron_daily_tasks'),
 ]
