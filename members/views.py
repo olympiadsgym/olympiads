@@ -268,6 +268,7 @@ def register_member(request):
                             member.expiry_date = expiry_date
                             member.status = 'Active'
                             member.is_active = True
+                            member.email = email  # ✅ Set email via descriptor
                             member.save()
 
                             if member.user:
@@ -287,15 +288,16 @@ def register_member(request):
                             user.set_password(temp_pw)
                             user.save()
 
-                            member = Member.objects.create(
+                            member = Member(  # ✅ Use constructor instead
                                 name=name,
-                                email=email,
                                 plan=plan,
                                 start_date=start_date,
                                 expiry_date=expiry_date,
                                 status='Active',
                                 user=user,
                             )
+                            member.email = email  # ✅ Set email via descriptor
+                            member.save()  # ✅ Then save
                     # Email is sent AFTER the transaction commits
                     try:
                         plain_text = (
