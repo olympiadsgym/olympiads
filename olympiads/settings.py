@@ -84,7 +84,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Manila'
-USE_I18N = True
+USE_I18N = False  # Disabled — app is English-only; avoids translation cold-start crash on Vercel
 USE_TZ = True
 
 STATIC_URL = '/static/'
@@ -127,4 +127,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://olympiads-beta.vercel.app',
 ]
 
+# signed_cookies: stores session data in the browser cookie (client-side).
+# Safe here — sessions only hold small integer IDs (admin_id, member_user_id).
+# To mass-invalidate all sessions, rotate SECRET_KEY in Vercel env vars.
 SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
