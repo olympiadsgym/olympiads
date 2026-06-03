@@ -282,30 +282,54 @@ def register_member(request):
                                 member.user = user
                                 member.save(update_fields=['user'])
                     else:
-                        # Brand new member — but guard against an orphaned User
-                        # left behind from a hard-deleted Member record.
+                        # Brand new member — but guard against orphaned User/Member
+                        # rows left behind from a hard-deleted Member record.
                         with transaction.atomic():
                             user = User.objects.filter(email=email, role='member').first()
                             if user:
-                                # Orphaned user exists — reuse and reset it
+                                # Orphaned user found — reset credentials
                                 user.set_password(temp_pw)
                                 user.reset_failed()
                                 user.save()
+                                # The user may still own a dead (inactive/deleted) Member
+                                # via the OneToOne member_profile link. Reuse it if found.
+                                orphaned_member = Member.objects.filter(user=user).first()
+                                if orphaned_member:
+                                    orphaned_member.name = name
+                                    orphaned_member.plan = plan
+                                    orphaned_member.start_date = start_date
+                                    orphaned_member.expiry_date = expiry_date
+                                    orphaned_member.status = 'Active'
+                                    orphaned_member.is_active = True
+                                    orphaned_member.email = email
+                                    orphaned_member.save()
+                                    member = orphaned_member
+                                else:
+                                    member = Member(
+                                        name=name,
+                                        plan=plan,
+                                        start_date=start_date,
+                                        expiry_date=expiry_date,
+                                        status='Active',
+                                        user=user,
+                                    )
+                                    member.email = email
+                                    member.save()
                             else:
                                 user = User(email=email, role='member')
                                 user.set_password(temp_pw)
                                 user.save()
 
-                            member = Member(  # ✅ Use constructor instead
-                                name=name,
-                                plan=plan,
-                                start_date=start_date,
-                                expiry_date=expiry_date,
-                                status='Active',
-                                user=user,
-                            )
-                            member.email = email  # ✅ Set email via descriptor
-                            member.save()  # ✅ Then save
+                                member = Member(
+                                    name=name,
+                                    plan=plan,
+                                    start_date=start_date,
+                                    expiry_date=expiry_date,
+                                    status='Active',
+                                    user=user,
+                                )
+                                member.email = email
+                                member.save()
                     # Email is sent AFTER the transaction commits
                     try:
                         plain_text = (
