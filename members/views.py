@@ -282,11 +282,19 @@ def register_member(request):
                                 member.user = user
                                 member.save(update_fields=['user'])
                     else:
-                        # Brand new member
+                        # Brand new member — but guard against an orphaned User
+                        # left behind from a hard-deleted Member record.
                         with transaction.atomic():
-                            user = User(email=email, role='member')
-                            user.set_password(temp_pw)
-                            user.save()
+                            user = User.objects.filter(email=email, role='member').first()
+                            if user:
+                                # Orphaned user exists — reuse and reset it
+                                user.set_password(temp_pw)
+                                user.reset_failed()
+                                user.save()
+                            else:
+                                user = User(email=email, role='member')
+                                user.set_password(temp_pw)
+                                user.save()
 
                             member = Member(  # ✅ Use constructor instead
                                 name=name,
