@@ -43,6 +43,137 @@ def _validate_password_policy(password):
     return None
 
 
+def _build_password_changed_html(member_name, email, new_password):
+    """HTML email sent after a successful password change or reset."""
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:#0f1117;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f1117;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding-bottom:28px;">
+              <span style="font-size:22px;font-weight:800;letter-spacing:2px;color:#f5a623;">OLYMPIADS</span>
+              <p style="margin:4px 0 0;font-size:12px;color:#6b7280;letter-spacing:1px;text-transform:uppercase;">Gym Management</p>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background:#1a1d2e;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);">
+
+              <!-- Green top bar -->
+              <div style="height:4px;background:linear-gradient(90deg,#22c55e,#4ade80);"></div>
+
+              <!-- Body -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:36px 36px 28px;">
+
+                    <!-- Badge -->
+                    <p style="text-align:center;margin:0 0 24px;">
+                      <span style="background:rgba(34,197,94,0.1);color:#22c55e;font-size:12px;font-weight:600;padding:6px 16px;border-radius:999px;border:1px solid rgba(34,197,94,0.3);text-transform:uppercase;letter-spacing:0.5px;">
+                        ✓ Password Changed Successfully
+                      </span>
+                    </p>
+
+                    <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#f9fafb;text-align:center;">Hi {member_name}!</h1>
+                    <p style="margin:0 0 28px;font-size:14px;color:#d1d5db;line-height:1.6;text-align:center;">
+                      Your OLYMPIADS portal password has been successfully changed. Here are your updated credentials:
+                    </p>
+
+                    <!-- Credentials box -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f1117;border-radius:10px;border:1px solid rgba(245,166,35,0.2);margin-bottom:28px;">
+                      <tr>
+                        <td style="padding:18px 24px;border-bottom:1px solid rgba(255,255,255,0.05);">
+                          <p style="margin:0 0 4px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;">Email</p>
+                          <p style="margin:0;font-size:14px;color:#f9fafb;">{email}</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:18px 24px;">
+                          <p style="margin:0 0 4px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;">New Password</p>
+                          <p style="margin:0;font-size:18px;font-weight:700;color:#f5a623;letter-spacing:3px;font-family:monospace;">{new_password}</p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Login button -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+                      <tr>
+                        <td align="center">
+                          <a href="{PORTAL_LOGIN_URL}"
+                             style="display:inline-block;padding:14px 40px;background:linear-gradient(90deg,#f5a623,#f7c36a);color:#0f1117;font-size:15px;font-weight:700;text-decoration:none;border-radius:8px;letter-spacing:0.5px;">
+                            Login to Your Portal
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <p style="margin:0;font-size:12px;color:#6b7280;line-height:1.6;text-align:center;">
+                      If you did not make this change, please contact the gym immediately.
+                    </p>
+
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding:24px 0 0;">
+              <p style="margin:0;font-size:12px;color:#4b5563;">© OLYMPIADS Gym · This is an automated message, please do not reply.</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+
+
+def _send_password_changed_email(user, new_password):
+    """Send a password-changed confirmation email. Silently logs on failure."""
+    try:
+        member_name = user.member_profile.name if hasattr(user, 'member_profile') else 'Member'
+        email = user.email
+
+        plain_text = (
+            f"Hi {member_name},\n\n"
+            f"Your OLYMPIADS portal password has been successfully changed.\n\n"
+            f"Email: {email}\n"
+            f"New Password: {new_password}\n\n"
+            f"You can log in here: {PORTAL_LOGIN_URL}\n\n"
+            f"If you did not make this change, please contact the gym immediately.\n\n"
+            f"— OLYMPIADS Gym Team"
+        )
+
+        msg = EmailMultiAlternatives(
+            subject="[OLYMPIADS] Your Password Has Been Changed",
+            body=plain_text,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email],
+        )
+        msg.attach_alternative(
+            _build_password_changed_html(member_name, email, new_password),
+            "text/html"
+        )
+        msg.send(fail_silently=False)
+        logger.info(f"Password change confirmation email sent to {email}")
+    except Exception as e:
+        logger.error(f"Failed to send password change confirmation email to {user.email}: {e}")
+
+
 # --- Admin: Member Management ------------------------------------
 
 @admin_required
@@ -708,7 +839,7 @@ def portal_login(request):
                 user.increment_failed(ip_address=ip.split(',')[0].strip())
                 error = 'Invalid email or password.'
 
-    return render(request, 'members/portal_login.html', {'error': error})
+    return render(request, 'members/portal_login.html', {'error': error, 'timed_out': timed_out})
 
 
 def portal_logout(request):
@@ -785,6 +916,9 @@ def change_password(request):
                 request.session.modified = True
                 success = True
 
+                # Send confirmation email with the new password
+                _send_password_changed_email(user, new_pw)
+
     return render(request, 'members/change_password.html', {
         'error': error,
         'success': success,
@@ -804,33 +938,30 @@ def forgot_password(request):
         if not email:
             error = 'Please enter your email address.'
         else:
-            # Check if email exists (encrypted in Member)
             from .encryption import make_lookup_hash
             email_hash = make_lookup_hash(email)
-            
+
             try:
                 member = Member.objects.get(email_hash=email_hash, is_active=True)
                 user = member.user
-                
+
                 if user:
                     # Generate reset token
                     token = secrets.token_urlsafe(48)
                     expires_at = timezone.now() + timezone.timedelta(hours=24)
-                    
+
                     # Delete any existing reset token for this user
                     PasswordResetToken.objects.filter(user=user).delete()
-                    
+
                     # Create new reset token
-                    reset_token_obj = PasswordResetToken.objects.create(
+                    PasswordResetToken.objects.create(
                         user=user,
                         token=token,
-                        expires_at=expires_at
+                        expires_at=expires_at,
                     )
-                    
-                    # Build reset link
+
                     reset_url = f"https://olympiads-beta.vercel.app/members/reset-password/{token}/"
-                    
-                    # Send password reset email
+
                     try:
                         plain_text = (
                             f"Hi {member.name},\n\n"
@@ -841,7 +972,7 @@ def forgot_password(request):
                             f"If you didn't request this, please ignore this email.\n\n"
                             f"— OLYMPIADS Gym Team"
                         )
-                        
+
                         html_body = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -853,7 +984,7 @@ def forgot_password(request):
     <tr>
       <td align="center">
         <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#1a2847;border-radius:14px;border:1px solid #2d3e5f;">
-          
+
           <!-- Header -->
           <tr>
             <td align="center" style="padding:32px 36px 24px;border-bottom:1px solid #2d3e5f;">
@@ -865,14 +996,10 @@ def forgot_password(request):
           <!-- Content -->
           <tr>
             <td style="padding:32px 36px;">
-              <p style="margin:0 0 16px;font-family:'Poppins',Arial,sans-serif;font-size:14px;color:#e2e8f0;line-height:1.6;">
-                Hi {member.name},
-              </p>
-              
+              <p style="margin:0 0 16px;font-family:'Poppins',Arial,sans-serif;font-size:14px;color:#e2e8f0;line-height:1.6;">Hi {member.name},</p>
               <p style="margin:0 0 20px;font-family:'Poppins',Arial,sans-serif;font-size:14px;color:#cbd5e1;line-height:1.6;">
                 We received a request to reset your OLYMPIADS password. Click the button below to set a new password:
               </p>
-              
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center" style="padding:20px 0;">
@@ -882,18 +1009,15 @@ def forgot_password(request):
                   </td>
                 </tr>
               </table>
-              
               <p style="margin:20px 0 0;font-family:'Poppins',Arial,sans-serif;font-size:12px;color:#94a3b8;line-height:1.6;">
                 If the button doesn't work, copy and paste this link into your browser:
               </p>
               <p style="margin:8px 0 0;font-family:monospace;font-size:11px;color:#64748b;word-break:break-all;padding:8px 12px;background:rgba(15,17,23,0.5);border-radius:6px;">
                 {reset_url}
               </p>
-              
               <p style="margin:20px 0 0;font-family:'Poppins',Arial,sans-serif;font-size:12px;color:#cbd5e1;line-height:1.6;">
                 <strong>This link will expire in 24 hours.</strong>
               </p>
-              
               <p style="margin:12px 0 0;font-family:'Poppins',Arial,sans-serif;font-size:12px;color:#94a3b8;line-height:1.6;">
                 If you didn't request a password reset, please ignore this email. Your account is safe.
               </p>
@@ -918,7 +1042,7 @@ def forgot_password(request):
   </table>
 </body>
 </html>"""
-                        
+
                         msg = EmailMultiAlternatives(
                             subject="[OLYMPIADS] Password Reset Request",
                             body=plain_text,
@@ -931,14 +1055,11 @@ def forgot_password(request):
                         sent = True
                     except Exception as e:
                         logger.error(f"Failed to send password reset email to {email}: {e}")
-                        # Even if email fails, we still show success to user for security
-                        sent = True
+                        sent = True  # show success anyway for security
                 else:
-                    # Member exists but no associated user account
                     sent = True
             except Member.DoesNotExist:
-                # User not found - show success anyway for security
-                sent = True
+                sent = True  # show success anyway for security
 
     return render(request, 'members/forgot_password.html', {
         'error': error,
@@ -953,7 +1074,6 @@ def reset_password(request, token):
     token_valid = False
     token_obj = None
 
-    # Validate token
     try:
         token_obj = PasswordResetToken.objects.get(token=token)
         if token_obj.is_valid():
@@ -976,17 +1096,19 @@ def reset_password(request, token):
             elif new_pw != confirm_pw:
                 error = 'Passwords do not match.'
             else:
-                # Update password
                 user = token_obj.user
                 user.set_password(new_pw)
-                user.reset_failed()  # Clear any failed login attempts
+                user.reset_failed()
                 user.save()
-                
-                # Delete the reset token
+
+                # Delete the reset token (one-time use)
                 token_obj.delete()
-                
+
                 success = True
                 logger.info(f"Password reset successful for {user.email}")
+
+                # Send confirmation email with the new password
+                _send_password_changed_email(user, new_pw)
 
     return render(request, 'members/reset_password.html', {
         'error': error,
